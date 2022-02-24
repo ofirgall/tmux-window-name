@@ -63,6 +63,10 @@ def get_exclusive_paths(panes: List[Pane]) -> List[Tuple[Pane, Path]]:
     # Start all displays as the last dir (.name)
     exc_paths = [DisplayedPath(pane, Path(pane.info['pane_current_path']), Path(Path(pane.info['pane_current_path']).name)) for pane in panes]
 
+    # TODO: issue:
+    # a/b - a/b
+    # a/b - b (need to bo a/b too)
+    # c/b - c/b
     for x in range(len(exc_paths)):
         for y in range(len(exc_paths)):
             if x == y:
