@@ -20,6 +20,7 @@ class Pane:
 
 # TODO: option?
 PROGRAMS_WITH_DIR = ['nvim', 'vim', 'vi', 'git']
+SHELLS = ['zsh', 'bash', 'sh']
 MAX_WINDOW_NAME_LEN = 20
 
 def get_current_program(pid: int) -> Optional[str]:
@@ -29,6 +30,11 @@ def get_current_program(pid: int) -> Optional[str]:
         return None
 
     program = program.split()[7:]
+
+    # Ignore shells
+    if program[0].decode() in SHELLS:
+        return None
+
     return b' '.join(program).decode()
 
 def is_program_with_dir(program_line: str) -> Tuple[bool, str]:
