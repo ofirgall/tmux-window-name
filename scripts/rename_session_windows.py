@@ -18,6 +18,7 @@ class Pane:
     info: Mapping[str, Any]
     program: Optional[str]
 
+# TODO: option?
 PROGRAMS_WITH_DIR = ['nvim', 'vim', 'vi', 'git']
 
 def get_current_program(pid: int) -> Optional[str]:
@@ -95,7 +96,8 @@ def rename_windows(server: libtmux.Server):
 
     for p, display_path in exclusive_paths:
         if p.program is not None:
-            display_path = f'{p.program}: {display_path}'
+            # TODO: format from option?
+            display_path = f'{p.program}:{display_path}'
         rename_window(server, p.info['window_id'], str(display_path))
 
 def get_current_session(server: libtmux.Server) -> libtmux.Session:
