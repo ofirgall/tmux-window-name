@@ -20,6 +20,7 @@ class Pane:
 
 # TODO: option?
 PROGRAMS_WITH_DIR = ['nvim', 'vim', 'vi', 'git']
+MAX_WINDOW_NAME_LEN = 20
 
 def get_current_program(pid: int) -> Optional[str]:
     try:
@@ -35,7 +36,8 @@ def is_program_with_dir(program_line: str) -> Tuple[bool, str]:
 
     for p in PROGRAMS_WITH_DIR:
         if p in program[0]:
-            return True, p
+            program[0] = p
+            return True, ' '.join(program)
 
     return False, ''
 
@@ -47,7 +49,7 @@ def get_session_active_panes(session: libtmux.Session) -> List[Mapping[str, Any]
     return [p for p in all_panes if p['pane_active'] == '1' and p['window_id'] in session_windows_ids]
 
 def rename_window(server: libtmux.Server, window_id: str, window_name: str):
-    server.cmd('rename-window', '-t', window_id, window_name)
+    server.cmd('rename-window', '-t', window_id, window_name[:MAX_WINDOW_NAME_LEN])
 
 def get_uncommon_path(a: Path, b: Path) -> Tuple[Path, Path]:
     for x in range(-1, -max(len(a.parts), len(b.parts)) - 1, -1):
