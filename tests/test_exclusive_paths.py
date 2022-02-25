@@ -51,9 +51,100 @@ def test_not_same_length():
         ('b/dir', None, 'b/dir'),
     ])
 
-def solve_test_reacurring_dir():
+def test_reacurring_dir():
     _check([
         ('a/dir', None, 'a/dir'),
         ('b/dir', None, 'b/dir'),
-        ('c/dir', None, 'c/dir'), # Bug
+        ('c/dir', None, 'c/dir'),
+    ])
+
+def test_same_path_twice_dir():
+    _check([
+        ('a/dir', None, 'a/dir'),
+        ('a/dir', None, 'a/dir'),
+        ('b/dir', None, 'b/dir'),
+    ])
+
+    _check([
+        ('a/dir', None, 'a/dir'),
+        ('b/dir', None, 'b/dir'),
+        ('a/dir', None, 'a/dir'),
+    ])
+
+    _check([
+        ('a/dir', None, 'a/dir'),
+        ('b/dir', None, 'b/dir'),
+        ('b/dir', None, 'b/dir'),
+        ('a/dir', None, 'a/dir'),
+    ])
+
+    _check([
+        ('a/dir', None, 'a/dir'),
+        ('b/dir', None, 'b/dir'),
+        ('a/dir', None, 'a/dir'),
+        ('b/dir', None, 'b/dir'),
+    ])
+
+    _check([
+        ('a/dir', None, 'a/dir'),
+        ('b/dir', None, 'b/dir'),
+        ('c/dir', None, 'c/dir'),
+        ('a/dir', None, 'a/dir'),
+        ('b/dir', None, 'b/dir'),
+        ('c/dir', None, 'c/dir'),
+    ])
+
+def test_mixed_basic():
+    _check([
+        ('a/dir', None, 'a/dir'),
+        ('b/dir', None, 'b/dir'),
+        ('c/c_dir', None, 'c_dir'),
+    ])
+
+    _check([
+        ('a/b/c/d', None, 'a/b/c/d'),
+        ('b/c/d', None, 'b/c/d'),
+        ('dirrr', None, 'dirrr'),
+    ])
+
+def test_program_basic():
+    _check([
+        ('a/dir', 'p1', 'dir'),
+        ('b/dir', None, 'dir'),
+    ])
+
+    _check([
+        ('a/dir', 'p1', 'dir'),
+        ('b/dir', 'p2', 'dir'),
+    ])
+
+    _check([
+        ('a/dir', 'p1', 'a/dir'),
+        ('b/dir', 'p1', 'b/dir'),
+    ])
+
+    _check([
+        ('a/dir', 'p1', 'dir'),
+        ('b/dir', 'p2', 'dir'),
+    ])
+
+def test_program_mixed():
+    _check([
+        ('a/dir', 'p1', 'dir'),
+        ('b/dir', None, 'dir'),
+        ('c/dir', 'p2', 'dir'),
+    ])
+
+    _check([
+        ('a/dir', 'p1', 'dir'),
+        ('b/dir', None, 'dir'),
+        ('a/dir', 'p1', 'dir'),
+        ('c/dir', 'p2', 'dir'),
+    ])
+
+    _check([
+        ('a/dir', 'p1', 'a/dir'),
+        ('b/dir', 'p1', 'b/dir'),
+        ('a/dir', 'p1', 'a/dir'),
+        ('c/dir', 'p2', 'dir'),
     ])
