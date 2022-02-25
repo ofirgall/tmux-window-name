@@ -105,17 +105,33 @@ $ tmux source-file ~/.tmux.conf
 ```
 
 ## Configuration Options
+_**Note**_: All options are evaluated with [eval](https://docs.python.org/3/library/functions.html#eval) be careful!
 
-TODO: complete
-### `@new_browser_window`
+### `@tmux_window_name_shells`
 
-The command to run a new window.
-E.g: `firefox --new-window url`
+Shell programs, will show dir instead of the program
 
 ```tmux.conf
-set -g @new_browser_window 'firefox --new-window'
+set -g @tmux_window_name_shells "['zsh', 'bash', 'sh']"
 ```
 
+### `@tmux_window_name_dir_programs`
+
+Programs that will show the dir name too.
+
+E.g: `git diff` running in `long_dir/my_repo` will show `git diff:my_repo`
+
+```tmux.conf
+set -g @tmux_window_dir_programs "['nvim', 'vim', 'vi', 'git']"
+```
+
+### `@tmux_window_name_max_name_len`
+
+Maximum name length of a window
+
+```tmux.conf
+set -g @tmux_window_max_name_len "20"
+```
 ---
 
 # Testing
