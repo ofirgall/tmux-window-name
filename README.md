@@ -8,6 +8,7 @@ A plugin to name your tmux windows smartly, like IDE's.
 
 * tmux (Tested on 3.0a)
 * Python 3.6.8+ (Maybe can be lower, tested on 3.6.8)
+* pip
 * [libtmux](https://github.com/tmux-python/libtmux) (will be installed during plugin init)
 
 ## Usage
