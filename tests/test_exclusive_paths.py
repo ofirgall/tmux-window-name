@@ -16,6 +16,12 @@ def _check(expected: List[Tuple[str, Optional[str], str]]):
 
     Args:
         expected (List[Tuple[str, Optional[str], str]]): list of (full_path, program, expected_display)
+    E.g:
+        _check([
+            ('a/dir', 'p1', 'dir'), # Program p1 in a/dir will display dir (will be formated to p1:dir)
+            ('b/dir', None, 'b/dir'), # Shell in b/dir will display b/dir
+            ('c/dir', None', 'c/dir'), # Shell in c/dir will display c/dir
+        ])
     """
     panes = [_fake_pane(full, program) for full, program, _ in expected]
     exclusive_panes = get_exclusive_paths(panes)
