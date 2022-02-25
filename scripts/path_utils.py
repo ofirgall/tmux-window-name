@@ -15,6 +15,11 @@ class DisplayedPath:
     full: Path
     display: Path
 
+    @staticmethod
+    def from_pane(pane: Pane):
+        path = Path(pane.info['pane_current_path'])
+        return DisplayedPath(pane, path, Path(path.name))
+
 def get_uncommon_path(a: Path, b: Path) -> Tuple[Path, Path]:
     for x in range(-1, -max(len(a.parts), len(b.parts)) - 1, -1):
         try:
@@ -27,7 +32,7 @@ def get_uncommon_path(a: Path, b: Path) -> Tuple[Path, Path]:
 
 def get_exclusive_paths(panes: List[Pane]) -> List[Tuple[Pane, Path]]:
     # Start all displays as the last dir (.name)
-    exc_paths = [DisplayedPath(pane, Path(pane.info['pane_current_path']), Path(Path(pane.info['pane_current_path']).name)) for pane in panes]
+    exc_paths = [DisplayedPath.from_pane(pane) for pane in panes]
 
     # TODO: issue:
     # a/b - a/b
@@ -37,11 +42,20 @@ def get_exclusive_paths(panes: List[Pane]) -> List[Tuple[Pane, Path]]:
         for y in range(len(exc_paths)):
             if x == y:
                 continue
-            # If same display find new display
-            if exc_paths[x].display == exc_paths[y].display and \
-                    panes[x].program == panes[y].program and \
-                    exc_paths[x].full != exc_paths[y].full:
-                exc_paths[x].display, exc_paths[y].display = get_uncommon_path(exc_paths[x].full, exc_paths[y].full)
+
+            # If full path equals no need to find a display path
+            if exc_paths[x].full == exc_paths[y].full:
+                continue
+
+            # If different programs dont change display path
+            if panes[x].program != panes[y].program:
+                continue
+
+            # If display not the same dont find new one
+            if exc_paths[x].display != exc_paths[y].display:
+                continue
+
+            exc_paths[x].display, exc_paths[y].display = get_uncommon_path(exc_paths[x].full, exc_paths[y].full)
 
     return [(p.pane, p.display) for p in exc_paths]
 
