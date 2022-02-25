@@ -5,7 +5,7 @@ import sys
 sys.path.append('scripts/')
 
 from pathlib import Path
-from rename_session_windows import get_uncommon_path
+from path_utils import get_uncommon_path
 
 def _check(a: str, b: str):
     new_a, new_b = get_uncommon_path(Path(a), Path(b))
