@@ -18,22 +18,9 @@ You tried to configure `automatic-rename` and `automatic-rename-format` but you 
 
 This plugin comes to solve those issues to name your windows inspired by IDE tablines.
 
-Make sure to check out [Examples](#Examples).
+It makes sure to show you the shortest path possible!
 
-### How it works
-Each time you unfocus from a pane, the plugin looks for every active pane in your session windows.
-
-_**Note**_: if you have a better hook in mind make sure to notify me!
-
-1. If shell is running, it shows the current dir as short as possible, `long_dir/a` -> `a`, it avoids [intersections](#Intersections) too!
-1. If "regular" program is running it shows the program with the args, `less ~/my_file` -> `less ~/my_file`.
-1. If "special" program is running it shows the program with the dir attached, `git diff` (in `long_dir/a`) -> `git diff:a`, it avoids [intersections](#Intersections) too!
-
-### Intersections
-
-To make the shortest path as possible the plugin finds the shortest not common path if your windows.
-
-#### Examples
+### Examples
 This session:
 ```
 1. ~/workspace/my_project
@@ -67,6 +54,21 @@ Will display:
 ```
 
 For more scenarios you check out the [tests](tests/test_exclusive_paths.py).
+
+---
+
+### How it works
+Each time you unfocus from a pane, the plugin looks for every active pane in your session windows.
+
+_**Note**_: if you have a better hook in mind make sure to notify me!
+
+1. If shell is running, it shows the current dir as short as possible, `long_dir/a` -> `a`, it avoids [intersections](#Intersections) too!
+1. If "regular" program is running it shows the program with the args, `less ~/my_file` -> `less ~/my_file`.
+1. If "special" program is running it shows the program with the dir attached, `git diff` (in `long_dir/a`) -> `git diff:a`, it avoids [intersections](#Intersections) too!
+
+#### Intersections
+
+To make the shortest path as possible the plugin finds the shortest not common path if your windows.
 
 --- 
 
