@@ -55,9 +55,12 @@ Will display:
 
 For more scenarios you check out the [tests](tests/test_exclusive_paths.py).
 
+## Known Issues
+* Overrides `tmux rename-window` of the user (if you have some idea how to detect it please let me know).
+
 ---
 
-### How it works
+## How it works
 Each time you unfocus from a pane, the plugin looks for every active pane in your session windows.
 
 _**Note**_: if you have a better hook in mind make sure to notify me!
@@ -66,7 +69,7 @@ _**Note**_: if you have a better hook in mind make sure to notify me!
 1. If "regular" program is running it shows the program with the args, `less ~/my_file` -> `less ~/my_file`.
 1. If "special" program is running it shows the program with the dir attached, `git diff` (in `long_dir/a`) -> `git diff:a`, it avoids [intersections](#Intersections) too!
 
-#### Intersections
+### Intersections
 
 To make the shortest path as possible the plugin finds the shortest not common path if your windows.
 
