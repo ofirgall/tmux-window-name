@@ -26,15 +26,15 @@ def get_current_program(pid: int) -> Optional[str]:
 
     return b' '.join(program).decode()
 
-def is_program_with_dir(program_line: str) -> Tuple[bool, str]:
+def get_program_if_dir(program_line: str) -> Optional[str]:
     program = program_line.split()
 
     for p in PROGRAMS_WITH_DIR:
         if p in program[0]:
             program[0] = p
-            return True, ' '.join(program)
+            return ' '.join(program)
 
-    return False, ''
+    return None
 
 def get_session_active_panes(session: libtmux.Session) -> List[Mapping[str, Any]]:
     all_panes = session.server._list_panes()
@@ -55,8 +55,8 @@ def rename_windows(server: libtmux.Server):
     panes_with_dir = [p for p in panes_programs if p.program is None]
 
     for pane in panes_with_programs:
-        is_with_dir, program_name = is_program_with_dir(pane.program)
-        if is_with_dir:
+        program_name = get_program_if_dir(pane.program)
+        if program_name is not None:
             pane.program = program_name
             panes_with_dir.append(pane)
             continue
