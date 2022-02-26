@@ -36,19 +36,21 @@ class Options:
 
         return Options(**fields_values)
 
-def get_current_program(pid: int, shells: List[str]) -> Optional[str]:
-    try:
-        program = subprocess.check_output(['ps', '-f', '--no-headers', '--ppid', str(pid)])
-    except subprocess.CalledProcessError:
-        return None
+def get_current_program(running_programs: List[bytes], pid: int, shells: List[str]) -> Optional[str]:
+    for program in running_programs:
+        program = program.split()
 
-    program = program.split()[7:]
+        # if pid matches parse program
+        if int(program[0]) == pid:
+            program = program[1:]
+            # Ignore shells
+            if program[0].decode() in shells:
+                return None
 
-    # Ignore shells
-    if program[0].decode() in shells:
-        return None
+            return b' '.join(program).decode()
 
-    return b' '.join(program).decode()
+    return None
+
 
 def get_program_if_dir(program_line: str, dir_programs: List[str]) -> Optional[str]:
     program = program_line.split()
@@ -75,7 +77,9 @@ def rename_windows(server: libtmux.Server):
     options = Options.from_options(server)
     session_active_panes = get_session_active_panes(current_session)
 
-    panes_programs = [Pane(p, get_current_program(p['pane_pid'], options.shells)) for p in session_active_panes]
+    running_programs = subprocess.check_output(['ps', '-a', '-oppid,command']).splitlines()[1:]
+
+    panes_programs = [Pane(p, get_current_program(running_programs, int(p['pane_pid']), options.shells)) for p in session_active_panes]
     panes_with_programs = [p for p in panes_programs if p.program is not None]
     panes_with_dir = [p for p in panes_programs if p.program is None]
 
