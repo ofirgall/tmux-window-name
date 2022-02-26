@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+import platform
+if platform.system() == 'Darwin':
+    import sh
+
 from dataclasses import dataclass, field
 import subprocess
 from typing import Any, List, Mapping, Optional
@@ -37,10 +41,16 @@ class Options:
         return Options(**fields_values)
 
 def get_current_program(pid: int, shells: List[str]) -> Optional[str]:
-    try:
-        program = subprocess.check_output(['ps', '-f', '--no-headers', '--ppid', str(pid)])
-    except subprocess.CalledProcessError:
-        return None
+    if platform.system() == 'Darwin':
+        try:
+            program = sh.grep(sh.ps('-o ppid,pid,user,cpu,stime,tty,time,command', _tty_size=(20, 500),), f"^{pid}").stdout
+        except sh.ErrorReturnCode_1:
+            return None
+    else:
+        try:
+            program = subprocess.check_output(['ps', '-f', '--no-headers', '--ppid', str(pid)])
+        except subprocess.CalledProcessError:
+            return None
 
     program = program.split()[7:]
 
