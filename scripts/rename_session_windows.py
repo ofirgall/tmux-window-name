@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 from dataclasses import dataclass, field
 import subprocess
 from typing import Any, List, Mapping, Optional
@@ -9,6 +10,8 @@ import libtmux
 from path_utils import get_exclusive_paths, Pane
 
 OPTIONS_PREFIX = '@tmux_window_name_'
+
+HOME_DIR = os.path.expanduser('~')
 
 def get_option(server: libtmux.Server, option: str, default: Any) -> Any:
     out = server.cmd('show-option', '-gv', f'{OPTIONS_PREFIX}{option}').stdout
@@ -22,6 +25,7 @@ class Options:
     shells: List[str] = field(default_factory=lambda: ['zsh', 'bash', 'sh'])
     dir_programs: List[str] = field(default_factory=lambda: ['nvim', 'vim', 'vi', 'git'])
     max_name_len: int = 20
+    use_tilde: bool = False
 
     @staticmethod
     def from_options(server: libtmux.Server):
@@ -69,7 +73,9 @@ def get_session_active_panes(session: libtmux.Session) -> List[Mapping[str, Any]
 
     return [p for p in all_panes if p['pane_active'] == '1' and p['window_id'] in session_windows_ids]
 
-def rename_window(server: libtmux.Server, window_id: str, window_name: str, max_name_len: int):
+def rename_window(server: libtmux.Server, window_id: str, window_name: str, max_name_len: int, use_tilde: bool):
+    if use_tilde:
+        window_name = window_name.replace(HOME_DIR, '~')
     server.cmd('rename-window', '-t', window_id, window_name[:max_name_len])
 
 def rename_windows(server: libtmux.Server):
@@ -90,14 +96,14 @@ def rename_windows(server: libtmux.Server):
             panes_with_dir.append(pane)
             continue
 
-        rename_window(server, pane.info['window_id'], pane.program, options.max_name_len)
+        rename_window(server, pane.info['window_id'], pane.program, options.max_name_len, options.use_tilde)
 
     exclusive_paths = get_exclusive_paths(panes_with_dir)
 
     for p, display_path in exclusive_paths:
         if p.program is not None:
             display_path = f'{p.program}:{display_path}'
-        rename_window(server, p.info['window_id'], str(display_path), options.max_name_len)
+        rename_window(server, p.info['window_id'], str(display_path), options.max_name_len, options.use_tilde)
 
 def get_current_session(server: libtmux.Server) -> libtmux.Session:
     session_id = server.cmd('display-message', '-p', '#{session_id}').stdout[0]
