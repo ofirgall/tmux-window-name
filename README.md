@@ -136,6 +136,15 @@ Maximum name length of a window
 ```tmux.conf
 set -g @tmux_window_max_name_len "20"
 ```
+
+### `@tmux_window_name_use_tilde`
+
+Replace `$HOME` with `~` in window names
+
+```tmux.conf
+set -g @tmux_window_name_use_tilde "False"
+```
+
 ---
 
 # Testing
