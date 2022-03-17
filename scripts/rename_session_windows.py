@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
+import subprocess
 import os
 from dataclasses import dataclass, field
-import subprocess
+from pathlib import Path
 from typing import Any, List, Mapping, Optional
 
 import libtmux
@@ -40,6 +41,16 @@ class Options:
 
         return Options(**fields_values)
 
+def parse_shell_command(shell_cmd: List[bytes]) -> Optional[str]:
+    # Only shell
+    if len(shell_cmd) == 1:
+        return None
+
+    shell_cmd_str = [x.decode() for x in shell_cmd]
+    # Get base filename
+    shell_cmd_str[1] = Path(shell_cmd_str[1]).name
+    return ' '.join(shell_cmd_str[1:])
+
 def get_current_program(running_programs: List[bytes], pid: int, shells: List[str]) -> Optional[str]:
     for program in running_programs:
         program = program.split()
@@ -49,7 +60,7 @@ def get_current_program(running_programs: List[bytes], pid: int, shells: List[st
             program = program[1:]
             # Ignore shells
             if program[0].decode() in shells:
-                return None
+                return parse_shell_command(program)
 
             return b' '.join(program).decode()
 
