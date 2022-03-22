@@ -9,4 +9,4 @@ if ! echo "$pip_list" | grep libtmux -q; then
 fi
 
 tmux set -g automatic-rename off
-tmux set-hook -g 'session-window-changed[8921]' "run-shell "$CURRENT_DIR/scripts/rename_session_windows.py""
+tmux set-hook -g 'pane-focus-out[8921]' "run-shell "$CURRENT_DIR/scripts/rename_session_windows.py""
