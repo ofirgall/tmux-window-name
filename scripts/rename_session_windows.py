@@ -2,9 +2,11 @@
 
 import subprocess
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, List, Mapping, Optional
+from typing import Any, List, Mapping, Optional, Tuple
+from argparse import ArgumentParser
 
 import libtmux
 
@@ -27,6 +29,7 @@ class Options:
     dir_programs: List[str] = field(default_factory=lambda: ['nvim', 'vim', 'vi', 'git'])
     max_name_len: int = 20
     use_tilde: bool = False
+    substitute_sets: List[Tuple] = field(default_factory=lambda: [('.+ipython([32])', r'ipython\g<1>')])
 
     @staticmethod
     def from_options(server: libtmux.Server):
@@ -89,14 +92,17 @@ def rename_window(server: libtmux.Server, window_id: str, window_name: str, max_
         window_name = window_name.replace(HOME_DIR, '~')
     server.cmd('rename-window', '-t', window_id, window_name[:max_name_len])
 
+def get_panes_programs(session: libtmux.Session, options: Options):
+    session_active_panes = get_session_active_panes(session)
+    running_programs = subprocess.check_output(['ps', '-a', '-oppid,command']).splitlines()[1:]
+
+    return [Pane(p, get_current_program(running_programs, int(p['pane_pid']), options.shells)) for p in session_active_panes]
+
 def rename_windows(server: libtmux.Server):
     current_session = get_current_session(server)
     options = Options.from_options(server)
-    session_active_panes = get_session_active_panes(current_session)
 
-    running_programs = subprocess.check_output(['ps', '-a', '-oppid,command']).splitlines()[1:]
-
-    panes_programs = [Pane(p, get_current_program(running_programs, int(p['pane_pid']), options.shells)) for p in session_active_panes]
+    panes_programs = get_panes_programs(current_session, options)
     panes_with_programs = [p for p in panes_programs if p.program is not None]
     panes_with_dir = [p for p in panes_programs if p.program is None]
 
@@ -107,22 +113,49 @@ def rename_windows(server: libtmux.Server):
             panes_with_dir.append(pane)
             continue
 
+        pane.program = substitute_program_name(pane.program, options.substitute_sets)
         rename_window(server, pane.info['window_id'], pane.program, options.max_name_len, options.use_tilde)
 
     exclusive_paths = get_exclusive_paths(panes_with_dir)
 
     for p, display_path in exclusive_paths:
         if p.program is not None:
+            p.program = substitute_program_name(p.program, options.substitute_sets)
             display_path = f'{p.program}:{display_path}'
+
         rename_window(server, p.info['window_id'], str(display_path), options.max_name_len, options.use_tilde)
 
 def get_current_session(server: libtmux.Server) -> libtmux.Session:
     session_id = server.cmd('display-message', '-p', '#{session_id}').stdout[0]
     return libtmux.Session(server, session_id=session_id)
 
+def substitute_program_name(program_line: str, substitute_sets: List[Tuple]) -> str:
+    for pattern, replacement in substitute_sets:
+        program_line = re.sub(pattern, replacement, program_line)
+
+    return program_line
+
+def print_programs(server: libtmux.Server):
+    current_session = get_current_session(server)
+    options = Options.from_options(server)
+
+    panes_programs = get_panes_programs(current_session, options)
+
+    for pane in panes_programs:
+        if pane.program:
+            print(f'{pane.program} -> {substitute_program_name(pane.program, options.substitute_sets)}')
+
 def main():
     server = libtmux.Server()
-    rename_windows(server)
+
+    parser = ArgumentParser('Renames tmux session windows')
+    parser.add_argument('--print_programs', action='store_true', help='Prints full name of the programs in the session')
+
+    args = parser.parse_args()
+    if args.print_programs:
+        print_programs(server)
+    else:
+        rename_windows(server)
 
 if __name__ == '__main__':
     main()
