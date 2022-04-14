@@ -87,10 +87,13 @@ def get_session_active_panes(session: libtmux.Session) -> List[Mapping[str, Any]
 
     return [p for p in all_panes if p['pane_active'] == '1' and p['window_id'] in session_windows_ids]
 
-def rename_window(server: libtmux.Server, window_id: str, window_name: str, max_name_len: int, use_tilde: bool):
+def rename_window(server: libtmux.Server, window_id: str, window_name: str, max_name_len: int, use_tilde: bool, print_only: bool):
     if use_tilde:
         window_name = window_name.replace(HOME_DIR, '~')
-    server.cmd('rename-window', '-t', window_id, window_name[:max_name_len])
+    if print_only:
+        print(window_name[:max_name_len])
+    else:
+        server.cmd('rename-window', '-t', window_id, window_name[:max_name_len])
 
 def get_panes_programs(session: libtmux.Session, options: Options):
     session_active_panes = get_session_active_panes(session)
@@ -98,7 +101,7 @@ def get_panes_programs(session: libtmux.Session, options: Options):
 
     return [Pane(p, get_current_program(running_programs, int(p['pane_pid']), options.shells)) for p in session_active_panes]
 
-def rename_windows(server: libtmux.Server):
+def rename_windows(server: libtmux.Server, window_id: int|None):
     current_session = get_current_session(server)
     options = Options.from_options(server)
 
@@ -107,6 +110,8 @@ def rename_windows(server: libtmux.Server):
     panes_with_dir = [p for p in panes_programs if p.program is None]
 
     for pane in panes_with_programs:
+        if window_id is not None and pane.info['window_id'] != window_id:
+            continue
         program_name = get_program_if_dir(pane.program, options.dir_programs)
         if program_name is not None:
             pane.program = program_name
@@ -114,16 +119,18 @@ def rename_windows(server: libtmux.Server):
             continue
 
         pane.program = substitute_program_name(pane.program, options.substitute_sets)
-        rename_window(server, pane.info['window_id'], pane.program, options.max_name_len, options.use_tilde)
+        rename_window(server, pane.info['window_id'], pane.program, options.max_name_len, options.use_tilde, window_id is not None)
 
     exclusive_paths = get_exclusive_paths(panes_with_dir)
 
     for p, display_path in exclusive_paths:
+        if window_id is not None and p.info['window_id'] != window_id:
+            continue
         if p.program is not None:
             p.program = substitute_program_name(p.program, options.substitute_sets)
             display_path = f'{p.program}:{display_path}'
 
-        rename_window(server, p.info['window_id'], str(display_path), options.max_name_len, options.use_tilde)
+        rename_window(server, p.info['window_id'], str(display_path), options.max_name_len, options.use_tilde, window_id is not None)
 
 def get_current_session(server: libtmux.Server) -> libtmux.Session:
     session_id = server.cmd('display-message', '-p', '#{session_id}').stdout[0]
@@ -150,12 +157,15 @@ def main():
 
     parser = ArgumentParser('Renames tmux session windows')
     parser.add_argument('--print_programs', action='store_true', help='Prints full name of the programs in the session')
+    parser.add_argument('--window_id', action='store', help='Print out name of the specified window only')
 
     args = parser.parse_args()
     if args.print_programs:
         print_programs(server)
+    elif args.window_id:
+        rename_windows(server, args.window_id)
     else:
-        rename_windows(server)
+        rename_windows(server, None)
 
 if __name__ == '__main__':
     main()
