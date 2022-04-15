@@ -25,6 +25,10 @@ def get_option(server: libtmux.Server, option: str, default: Any) -> Any:
     return eval(out[0])
 
 
+def set_option(server: libtmux.Server, option: str, val: str):
+    server.cmd('set-option', '-g', f'{OPTIONS_PREFIX}{option}', val)
+
+
 def get_window_option(server: libtmux.Server, window_id: Optional[str], option:str, default:Any) -> Any:
     arguments = ['show-option', '-wqv']
     if window_id is not None:
@@ -44,6 +48,23 @@ def enable_user_rename_hook(server: libtmux.Server):
 
 def disable_user_rename_hook(server: libtmux.Server):
     server.cmd('set-hook', '-ug', f'after-rename-window[{HOOK_INDEX}]')
+
+
+class TmuxGuard:
+    def __init__(self, server: libtmux.Server) -> None:
+        self.server = server
+        self.already_running = get_option(server, 'running', 0)
+
+    def __enter__(self):
+        if not self.already_running:
+            set_option(self.server, 'running', '1')
+            disable_user_rename_hook(self.server)
+        return self.already_running
+
+    def __exit__(self, *exc):
+        if not self.already_running:
+            enable_user_rename_hook(self.server)
+            set_option(self.server, 'running', '0')
 
 
 @dataclass
@@ -122,41 +143,42 @@ def get_panes_programs(session: libtmux.Session, options: Options):
     return [Pane(p, get_current_program(running_programs, int(p['pane_pid']), options.shells)) for p in session_active_panes]
 
 def rename_windows(server: libtmux.Server):
-    current_session = get_current_session(server)
-    options = Options.from_options(server)
+    with TmuxGuard(server) as already_running:
+        if already_running:
+            return
 
-    panes_programs = get_panes_programs(current_session, options)
-    panes_with_programs = [p for p in panes_programs if p.program is not None]
-    panes_with_dir = [p for p in panes_programs if p.program is None]
+        current_session = get_current_session(server)
+        options = Options.from_options(server)
 
-    disable_user_rename_hook(server)
+        panes_programs = get_panes_programs(current_session, options)
+        panes_with_programs = [p for p in panes_programs if p.program is not None]
+        panes_with_dir = [p for p in panes_programs if p.program is None]
 
-    for pane in panes_with_programs:
-        enabled_in_window = get_window_option(server, pane.info['window_id'], 'enabled', 0)
-        if not enabled_in_window:
-            continue
-        program_name = get_program_if_dir(pane.program, options.dir_programs)
-        if program_name is not None:
-            pane.program = program_name
-            panes_with_dir.append(pane)
-            continue
 
-        pane.program = substitute_program_name(pane.program, options.substitute_sets)
-        rename_window(server, pane.info['window_id'], pane.program, options.max_name_len, options.use_tilde)
+        for pane in panes_with_programs:
+            enabled_in_window = get_window_option(server, pane.info['window_id'], 'enabled', 0)
+            if not enabled_in_window:
+                continue
+            program_name = get_program_if_dir(pane.program, options.dir_programs)
+            if program_name is not None:
+                pane.program = program_name
+                panes_with_dir.append(pane)
+                continue
 
-    exclusive_paths = get_exclusive_paths(panes_with_dir)
+            pane.program = substitute_program_name(pane.program, options.substitute_sets)
+            rename_window(server, pane.info['window_id'], pane.program, options.max_name_len, options.use_tilde)
 
-    for p, display_path in exclusive_paths:
-        enabled_in_window = get_window_option(server, p.info['window_id'], 'enabled', 0)
-        if not enabled_in_window:
-            continue
-        if p.program is not None:
-            p.program = substitute_program_name(p.program, options.substitute_sets)
-            display_path = f'{p.program}:{display_path}'
+        exclusive_paths = get_exclusive_paths(panes_with_dir)
 
-        rename_window(server, p.info['window_id'], str(display_path), options.max_name_len, options.use_tilde)
+        for p, display_path in exclusive_paths:
+            enabled_in_window = get_window_option(server, p.info['window_id'], 'enabled', 0)
+            if not enabled_in_window:
+                continue
+            if p.program is not None:
+                p.program = substitute_program_name(p.program, options.substitute_sets)
+                display_path = f'{p.program}:{display_path}'
 
-    enable_user_rename_hook(server)
+            rename_window(server, p.info['window_id'], str(display_path), options.max_name_len, options.use_tilde)
 
 def get_current_session(server: libtmux.Server) -> libtmux.Session:
     session_id = server.cmd('display-message', '-p', '#{session_id}').stdout[0]
