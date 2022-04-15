@@ -13,6 +13,7 @@ import libtmux
 from path_utils import get_exclusive_paths, Pane
 
 OPTIONS_PREFIX = '@tmux_window_name_'
+HOOK_INDEX = 8921
 
 HOME_DIR = os.path.expanduser('~')
 
@@ -22,6 +23,28 @@ def get_option(server: libtmux.Server, option: str, default: Any) -> Any:
         return default
 
     return eval(out[0])
+
+
+def get_window_option(server: libtmux.Server, window_id: Optional[str], option:str, default:Any) -> Any:
+    arguments = ['show-option', '-wqv']
+    if window_id is not None:
+        arguments.append('-t')
+        arguments.append(window_id)
+    arguments.append(f'{OPTIONS_PREFIX}{option}')
+    out = server.cmd(*arguments).stdout
+    if len(out) == 0:
+        return default
+
+    return eval(out[0])
+
+
+def enable_user_rename_hook(server: libtmux.Server):
+    server.cmd('set-hook', '-g', f'after-rename-window[{HOOK_INDEX}]', f'set -uw {OPTIONS_PREFIX}enabled')
+
+
+def disable_user_rename_hook(server: libtmux.Server):
+    server.cmd('set-hook', '-ug', f'after-rename-window[{HOOK_INDEX}]')
+
 
 @dataclass
 class Options:
@@ -106,7 +129,12 @@ def rename_windows(server: libtmux.Server):
     panes_with_programs = [p for p in panes_programs if p.program is not None]
     panes_with_dir = [p for p in panes_programs if p.program is None]
 
+    disable_user_rename_hook(server)
+
     for pane in panes_with_programs:
+        enabled_in_window = get_window_option(server, pane.info['window_id'], 'enabled', 0)
+        if not enabled_in_window:
+            continue
         program_name = get_program_if_dir(pane.program, options.dir_programs)
         if program_name is not None:
             pane.program = program_name
@@ -119,11 +147,16 @@ def rename_windows(server: libtmux.Server):
     exclusive_paths = get_exclusive_paths(panes_with_dir)
 
     for p, display_path in exclusive_paths:
+        enabled_in_window = get_window_option(server, p.info['window_id'], 'enabled', 0)
+        if not enabled_in_window:
+            continue
         if p.program is not None:
             p.program = substitute_program_name(p.program, options.substitute_sets)
             display_path = f'{p.program}:{display_path}'
 
         rename_window(server, p.info['window_id'], str(display_path), options.max_name_len, options.use_tilde)
+
+    enable_user_rename_hook(server)
 
 def get_current_session(server: libtmux.Server) -> libtmux.Session:
     session_id = server.cmd('display-message', '-p', '#{session_id}').stdout[0]
