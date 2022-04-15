@@ -43,7 +43,7 @@ def get_window_option(server: libtmux.Server, window_id: Optional[str], option:s
 
 
 def enable_user_rename_hook(server: libtmux.Server):
-    server.cmd('set-hook', '-g', f'after-rename-window[{HOOK_INDEX}]', f'set -uw {OPTIONS_PREFIX}enabled')
+    server.cmd('set-hook', '-g', f'after-rename-window[{HOOK_INDEX}]', f'if-shell "[ #{{n:window_name}} -gt 0 ]" "set -uw @tmux_window_name_enabled" "set -w @tmux_window_name_enabled 1; run-shell "{__file__}"')
 
 
 def disable_user_rename_hook(server: libtmux.Server):
