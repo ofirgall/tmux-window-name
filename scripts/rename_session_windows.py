@@ -5,8 +5,9 @@ import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, List, Mapping, Optional, Tuple
+from typing import Any, Iterator, List, Mapping, Optional, Tuple
 from argparse import ArgumentParser
+from contextlib import contextmanager
 
 import libtmux
 
@@ -50,21 +51,20 @@ def disable_user_rename_hook(server: libtmux.Server):
     server.cmd('set-hook', '-ug', f'after-rename-window[{HOOK_INDEX}]')
 
 
-class TmuxGuard:
-    def __init__(self, server: libtmux.Server) -> None:
-        self.server = server
-        self.already_running = get_option(server, 'running', 0)
+@contextmanager
+def tmux_guard(server: libtmux.Server) -> Iterator[bool]:
+    already_running = bool(get_option(server, 'running', 0))
 
-    def __enter__(self):
-        if not self.already_running:
-            set_option(self.server, 'running', '1')
-            disable_user_rename_hook(self.server)
-        return self.already_running
+    try:
+        if not already_running:
+            set_option(server, 'running', '1')
+            disable_user_rename_hook(server)
 
-    def __exit__(self, *exc):
-        if not self.already_running:
-            enable_user_rename_hook(self.server)
-            set_option(self.server, 'running', '0')
+        yield already_running
+    finally:
+        if not already_running:
+            enable_user_rename_hook(server)
+            set_option(server, 'running', '0')
 
 
 @dataclass
@@ -143,7 +143,7 @@ def get_panes_programs(session: libtmux.Session, options: Options):
     return [Pane(p, get_current_program(running_programs, int(p['pane_pid']), options.shells)) for p in session_active_panes]
 
 def rename_windows(server: libtmux.Server):
-    with TmuxGuard(server) as already_running:
+    with tmux_guard(server) as already_running:
         if already_running:
             return
 
