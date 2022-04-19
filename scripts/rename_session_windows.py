@@ -159,6 +159,7 @@ def rename_windows(server: libtmux.Server):
             enabled_in_window = get_window_option(server, pane.info['window_id'], 'enabled', 0)
             if not enabled_in_window:
                 continue
+
             program_name = get_program_if_dir(pane.program, options.dir_programs)
             if program_name is not None:
                 pane.program = program_name
@@ -174,6 +175,7 @@ def rename_windows(server: libtmux.Server):
             enabled_in_window = get_window_option(server, p.info['window_id'], 'enabled', 0)
             if not enabled_in_window:
                 continue
+
             if p.program is not None:
                 p.program = substitute_program_name(p.program, options.substitute_sets)
                 display_path = f'{p.program}:{display_path}'
