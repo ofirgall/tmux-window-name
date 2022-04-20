@@ -11,4 +11,12 @@ fi
 tmux set -g automatic-rename off
 tmux set-hook -g 'after-select-window[8921]' "run-shell ""$CURRENT_DIR""/scripts/rename_session_windows.py"
 
+############################################################################################
+### Hacks for preserving users custom window names, read more at enable_user_rename_hook ###
+############################################################################################
+
 "$CURRENT_DIR"/scripts/rename_session_windows.py --enable_rename_hook
+
+# Disabling rename hooks when tmux-ressurect restores the sessions
+tmux set -g @resurrect-hook-pre-restore-all ""$CURRENT_DIR"/scripts/rename_session_windows.py --disable_rename_hook"
+tmux set -g @resurrect-hook-post-restore-all ""$CURRENT_DIR"/scripts/rename_session_windows.py --enable_rename_hook"
