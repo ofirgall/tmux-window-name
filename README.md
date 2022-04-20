@@ -1,8 +1,15 @@
-# Better Window names for tmux
+# Better Window Names for tmux
 
 A plugin to name your tmux windows smartly, like IDE's.
 
 ![Tmux Window Name Screenshot](screenshots/example.png)
+
+## Index
+* [Use case](#use-case)
+* [Usage](#usage)
+* [How it works](#how-it-works)
+* [Installation](#installation)
+* [Configuration Options](#configuration-options)
 
 ## Dependencies
 
@@ -11,17 +18,16 @@ A plugin to name your tmux windows smartly, like IDE's.
 * pip
 * [libtmux](https://github.com/tmux-python/libtmux)
 
-## Usage
+## Use case
 
 If you are using tmux as your main multiplexer you probably found yourself with 5+ windows per session with indexed names but no information about whats going on in the windows.
 
 You tried to configure `automatic-rename` and `automatic-rename-format` but you found yourself pretty limited.
 
-This plugin comes to solve those issues to name your windows inspired by IDE tablines.
-
+This plugin comes to solve those issues to name your windows inspired by IDE tablines.\
 It makes sure to show you the shortest path possible!
 
-### Examples
+#### Examples
 This session:
 ```
 1. ~/workspace/my_project
@@ -56,8 +62,20 @@ Will display:
 
 For more scenarios you check out the [tests](tests/test_exclusive_paths.py).
 
+## Usage
+[Install](#installation) the plugin and let it name your windows :)
+
+You can `tmux rename-window` manually to set your own window names, to re-enable automatic renames set run `tmux rename-window ""`
+
+Make sure your configuration/other plugins doesn't turn on `automatic-rename` and doesn't rename your windows.
+
+#### Hooks Used
+Make sure the hooks that used aren't overridden.
+* @resurrect-hook-pre-restore-all
+* @resurrect-hook-post-restore-all
+
 ## Known Issues
-* Overrides `tmux rename-window` of the user (if you have some idea how to detect it please let me know).
+* [tmux-resurrect doesn't preserve manual windows names](https://github.com/ofirgall/tmux-window-name/issues/12)
 
 ---
 
