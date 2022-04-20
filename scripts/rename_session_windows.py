@@ -5,14 +5,16 @@ import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, List, Mapping, Optional, Tuple
+from typing import Any, Iterator, List, Mapping, Optional, Tuple
 from argparse import ArgumentParser
+from contextlib import contextmanager
 
 import libtmux
 
 from path_utils import get_exclusive_paths, Pane
 
 OPTIONS_PREFIX = '@tmux_window_name_'
+HOOK_INDEX = 8921
 
 HOME_DIR = os.path.expanduser('~')
 
@@ -22,6 +24,59 @@ def get_option(server: libtmux.Server, option: str, default: Any) -> Any:
         return default
 
     return eval(out[0])
+
+
+def set_option(server: libtmux.Server, option: str, val: str):
+    server.cmd('set-option', '-g', f'{OPTIONS_PREFIX}{option}', val)
+
+
+def get_window_option(server: libtmux.Server, window_id: Optional[str], option: str, default: Any) -> Any:
+    arguments = ['show-option', '-wqv']
+    if window_id is not None:
+        arguments.append('-t')
+        arguments.append(window_id)
+    arguments.append(f'{OPTIONS_PREFIX}{option}')
+    out = server.cmd(*arguments).stdout
+    if len(out) == 0:
+        return default
+
+    return eval(out[0])
+
+
+def enable_user_rename_hook(server: libtmux.Server):
+    """
+    The hook:
+        if window has name:
+            set @tmux_window_name_enabled to 1
+        else:
+            set @tmux_window_name_enabled to 0
+
+    @tmux_window_name_enabled (window option):
+        Indicator if we should rename the window or not
+    """
+    current_file = Path(__file__).absolute()
+    server.cmd('set-hook', '-g', f'after-rename-window[{HOOK_INDEX}]', f'if-shell "[ #{{n:window_name}} -gt 0 ]" "set -w @tmux_window_name_enabled 0" "set -w @tmux_window_name_enabled 1; run-shell "{current_file}"')
+
+
+def disable_user_rename_hook(server: libtmux.Server):
+    server.cmd('set-hook', '-ug', f'after-rename-window[{HOOK_INDEX}]')
+
+
+@contextmanager
+def tmux_guard(server: libtmux.Server) -> Iterator[bool]:
+    already_running = bool(get_option(server, 'running', 0))
+
+    try:
+        if not already_running:
+            set_option(server, 'running', '1')
+            disable_user_rename_hook(server)
+
+        yield already_running
+    finally:
+        if not already_running:
+            enable_user_rename_hook(server)
+            set_option(server, 'running', '0')
+
 
 @dataclass
 class Options:
@@ -99,31 +154,44 @@ def get_panes_programs(session: libtmux.Session, options: Options):
     return [Pane(p, get_current_program(running_programs, int(p['pane_pid']), options.shells)) for p in session_active_panes]
 
 def rename_windows(server: libtmux.Server):
-    current_session = get_current_session(server)
-    options = Options.from_options(server)
+    with tmux_guard(server) as already_running:
+        if already_running:
+            return
 
-    panes_programs = get_panes_programs(current_session, options)
-    panes_with_programs = [p for p in panes_programs if p.program is not None]
-    panes_with_dir = [p for p in panes_programs if p.program is None]
+        current_session = get_current_session(server)
+        options = Options.from_options(server)
 
-    for pane in panes_with_programs:
-        program_name = get_program_if_dir(pane.program, options.dir_programs)
-        if program_name is not None:
-            pane.program = program_name
-            panes_with_dir.append(pane)
-            continue
+        panes_programs = get_panes_programs(current_session, options)
+        panes_with_programs = [p for p in panes_programs if p.program is not None]
+        panes_with_dir = [p for p in panes_programs if p.program is None]
 
-        pane.program = substitute_program_name(pane.program, options.substitute_sets)
-        rename_window(server, pane.info['window_id'], pane.program, options.max_name_len, options.use_tilde)
 
-    exclusive_paths = get_exclusive_paths(panes_with_dir)
+        for pane in panes_with_programs:
+            enabled_in_window = get_window_option(server, pane.info['window_id'], 'enabled', 1)
+            if not enabled_in_window:
+                continue
 
-    for p, display_path in exclusive_paths:
-        if p.program is not None:
-            p.program = substitute_program_name(p.program, options.substitute_sets)
-            display_path = f'{p.program}:{display_path}'
+            program_name = get_program_if_dir(pane.program, options.dir_programs)
+            if program_name is not None:
+                pane.program = program_name
+                panes_with_dir.append(pane)
+                continue
 
-        rename_window(server, p.info['window_id'], str(display_path), options.max_name_len, options.use_tilde)
+            pane.program = substitute_program_name(pane.program, options.substitute_sets)
+            rename_window(server, pane.info['window_id'], pane.program, options.max_name_len, options.use_tilde)
+
+        exclusive_paths = get_exclusive_paths(panes_with_dir)
+
+        for p, display_path in exclusive_paths:
+            enabled_in_window = get_window_option(server, p.info['window_id'], 'enabled', 1)
+            if not enabled_in_window:
+                continue
+
+            if p.program is not None:
+                p.program = substitute_program_name(p.program, options.substitute_sets)
+                display_path = f'{p.program}:{display_path}'
+
+            rename_window(server, p.info['window_id'], str(display_path), options.max_name_len, options.use_tilde)
 
 def get_current_session(server: libtmux.Server) -> libtmux.Session:
     session_id = server.cmd('display-message', '-p', '#{session_id}').stdout[0]
@@ -150,10 +218,16 @@ def main():
 
     parser = ArgumentParser('Renames tmux session windows')
     parser.add_argument('--print_programs', action='store_true', help='Prints full name of the programs in the session')
+    parser.add_argument('--enable_rename_hook', action='store_true', help='Enables rename hook, for internal use')
+    parser.add_argument('--disable_rename_hook', action='store_true', help='Enables rename hook, for internal use')
 
     args = parser.parse_args()
     if args.print_programs:
         print_programs(server)
+    elif args.enable_rename_hook:
+        enable_user_rename_hook(server)
+    elif args.disable_rename_hook:
+        disable_user_rename_hook(server)
     else:
         rename_windows(server)
 
