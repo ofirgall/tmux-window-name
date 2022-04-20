@@ -9,7 +9,7 @@ if ! echo "$pip_list" | grep libtmux -q; then
 fi
 
 tmux set -g automatic-rename off
-tmux set-hook -g 'after-select-window[8921]' "run-shell ""$CURRENT_DIR""/scripts/rename_session_windows.py"
+tmux set-hook -g 'after-select-window[8921]' "run-shell -b ""$CURRENT_DIR""/scripts/rename_session_windows.py"
 
 ############################################################################################
 ### Hacks for preserving users custom window names, read more at enable_user_rename_hook ###
