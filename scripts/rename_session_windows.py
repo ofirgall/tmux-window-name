@@ -30,7 +30,7 @@ def set_option(server: libtmux.Server, option: str, val: str):
     server.cmd('set-option', '-g', f'{OPTIONS_PREFIX}{option}', val)
 
 
-def get_window_option(server: libtmux.Server, window_id: Optional[str], option:str, default:Any) -> Any:
+def get_window_option(server: libtmux.Server, window_id: Optional[str], option: str, default: Any) -> Any:
     arguments = ['show-option', '-wqv']
     if window_id is not None:
         arguments.append('-t')
@@ -44,8 +44,18 @@ def get_window_option(server: libtmux.Server, window_id: Optional[str], option:s
 
 
 def enable_user_rename_hook(server: libtmux.Server):
+    """
+    The hook:
+        if window has name:
+            set @tmux_window_name_enabled to 1
+        else:
+            set @tmux_window_name_enabled to 0
+
+    @tmux_window_name_enabled (window option):
+        Indicator if we should rename the window or not
+    """
     current_file = Path(__file__).absolute()
-    server.cmd('set-hook', '-g', f'after-rename-window[{HOOK_INDEX}]', f'if-shell "[ #{{n:window_name}} -gt 0 ]" "set -uw @tmux_window_name_enabled" "set -w @tmux_window_name_enabled 1; run-shell "{current_file}"')
+    server.cmd('set-hook', '-g', f'after-rename-window[{HOOK_INDEX}]', f'if-shell "[ #{{n:window_name}} -gt 0 ]" "set -w @tmux_window_name_enabled 0" "set -w @tmux_window_name_enabled 1; run-shell "{current_file}"')
 
 
 def disable_user_rename_hook(server: libtmux.Server):
@@ -157,7 +167,7 @@ def rename_windows(server: libtmux.Server):
 
 
         for pane in panes_with_programs:
-            enabled_in_window = get_window_option(server, pane.info['window_id'], 'enabled', 0)
+            enabled_in_window = get_window_option(server, pane.info['window_id'], 'enabled', 1)
             if not enabled_in_window:
                 continue
 
@@ -173,7 +183,7 @@ def rename_windows(server: libtmux.Server):
         exclusive_paths = get_exclusive_paths(panes_with_dir)
 
         for p, display_path in exclusive_paths:
-            enabled_in_window = get_window_option(server, p.info['window_id'], 'enabled', 0)
+            enabled_in_window = get_window_option(server, p.info['window_id'], 'enabled', 1)
             if not enabled_in_window:
                 continue
 
