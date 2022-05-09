@@ -65,6 +65,8 @@ For more scenarios you check out the [tests](tests/test_exclusive_paths.py).
 ## Usage
 [Install](#installation) the plugin and let it name your windows :)
 
+_**Note**_: if you are using [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect) `tmux-window-name` must be loaded before `tmux-resurrect`
+
 You can `tmux rename-window` manually to set your own window names, to re-enable automatic renames set run `tmux rename-window ""`
 
 Make sure your configuration/other plugins doesn't turn on `automatic-rename` and doesn't rename your windows.
@@ -107,6 +109,13 @@ Add plugin to the list of TPM plugins:
 
 ```tmux.conf
 set -g @plugin 'ofirgall/tmux-window-name'
+```
+
+_**Note**_: set `tmux-window-name` before `tmux-resurrect` (if you are using `tmux-resurrect`)
+
+```tmux.conf
+set -g @plugin 'ofirgall/tmux-window-name'
+set -g @plugin 'tmux-plugins/tmux-resurrect'
 ```
 
 Press prefix + I to install it.
