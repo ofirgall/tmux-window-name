@@ -82,6 +82,7 @@ def tmux_guard(server: libtmux.Server) -> Iterator[bool]:
 class Options:
     shells: List[str] = field(default_factory=lambda: ['zsh', 'bash', 'sh'])
     dir_programs: List[str] = field(default_factory=lambda: ['nvim', 'vim', 'vi', 'git'])
+    ignored_programs: List[str] = field(default_factory=lambda: [])
     max_name_len: int = 20
     use_tilde: bool = False
     substitute_sets: List[Tuple] = field(default_factory=lambda: [('.+ipython([32])', r'ipython\g<1>')])
@@ -109,15 +110,20 @@ def parse_shell_command(shell_cmd: List[bytes]) -> Optional[str]:
     shell_cmd_str[1] = Path(shell_cmd_str[1]).name
     return ' '.join(shell_cmd_str[1:])
 
-def get_current_program(running_programs: List[bytes], pid: int, shells: List[str]) -> Optional[str]:
+def get_current_program(running_programs: List[bytes], pid: int, options: Options) -> Optional[str]:
     for program in running_programs:
         program = program.split()
 
         # if pid matches parse program
         if int(program[0]) == pid:
             program = program[1:]
+            program_name = program[0].decode()
+
+            if program_name in options.ignored_programs:
+                continue
+
             # Ignore shells
-            if program[0].decode() in shells:
+            if program_name in options.shells:
                 return parse_shell_command(program)
 
             return b' '.join(program).decode()
@@ -151,7 +157,7 @@ def get_panes_programs(session: libtmux.Session, options: Options):
     session_active_panes = get_session_active_panes(session)
     running_programs = subprocess.check_output(['ps', '-a', '-oppid,command']).splitlines()[1:]
 
-    return [Pane(p, get_current_program(running_programs, int(p['pane_pid']), options.shells)) for p in session_active_panes]
+    return [Pane(p, get_current_program(running_programs, int(p['pane_pid']), options)) for p in session_active_panes]
 
 def rename_windows(server: libtmux.Server):
     with tmux_guard(server) as already_running:

@@ -161,6 +161,14 @@ E.g: `git diff` running in `long_dir/my_repo` will show `git diff:my_repo`
 set -g @tmux_window_dir_programs "['nvim', 'vim', 'vi', 'git']"
 ```
 
+### `@tmux_window_name_ignored_programs`
+
+Programs that will be skipped/ignored when looking for active program.
+
+```tmux.conf
+set -g @tmux_window_name_ignored_programs "['sqlite3']" # Default is []
+```
+
 ### `@tmux_window_name_max_name_len`
 
 Maximum name length of a window
