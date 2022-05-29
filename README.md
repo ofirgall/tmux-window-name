@@ -198,6 +198,11 @@ set -g @tmux_window_name_substitute_sets "[('.+ipython2', 'ipython2'), ('.+ipyth
 
 # Same example but with regex groups
 set -g @tmux_window_name_substitute_sets "[('.+ipython([32])', 'ipython\g<1>')]"
+
+# Default Value:
+set -g @tmux_window_name_substitute_sets "[('.+ipython([32])', 'ipython\g<1>'), ('^(/usr)?/bin/(.+)', '\g<2>')]"
+	# 0: from example
+	# 1: removing `/usr/bin` and `/bin` prefixes of files
 ```
 
 ---
