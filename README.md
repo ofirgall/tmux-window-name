@@ -103,6 +103,11 @@ To make the shortest path as possible the plugin finds the shortest not common p
 python3 -m pip install libtmux --user
 ```
 
+### Install dataclasses (for Python 3.6.X only)
+```sh
+python3 -m pip install dataclasses --user
+```
+
 ### Installation with [Tmux Plugin Manager](https://github.com/tmux-plugins/tpm) (recommended)
 
 Add plugin to the list of TPM plugins:
