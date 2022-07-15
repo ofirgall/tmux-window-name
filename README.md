@@ -99,6 +99,8 @@ To make the shortest path as possible the plugin finds the shortest not common p
 ## Installation
 
 ### Install libtmux (must)
+_**Note**_: Make sure you are using the `user` python and not `sudo` python or `virutalenv` python!
+
 ```sh
 python3 -m pip install libtmux --user
 ```
