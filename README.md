@@ -76,9 +76,6 @@ Make sure the hooks that used aren't overridden.
 * @resurrect-hook-pre-restore-all
 * @resurrect-hook-post-restore-all
 
-## Known Issues
-* [tmux-resurrect doesn't preserve manual windows names](https://github.com/ofirgall/tmux-window-name/issues/12)
-
 ---
 
 ## How it works
