@@ -8,7 +8,7 @@ if ! echo "$pip_list" | grep libtmux -q; then
     exit 0
 fi
 
-tmux set -g automatic-rename off
+tmux set-hook -g 'after-new-window[8921]' 'set -wF @tmux_window_name_enabled \#\{automatic-rename\} ; set -w automatic-rename off'
 tmux set-hook -g 'after-select-window[8921]' "run-shell -b ""$CURRENT_DIR""/scripts/rename_session_windows.py"
 
 ############################################################################################
