@@ -20,4 +20,4 @@ tmux set-hook -g 'after-select-window[8921]' "run-shell -b ""$CURRENT_DIR""/scri
 
 # Disabling rename hooks when tmux-ressurect restores the sessions
 tmux set -g @resurrect-hook-pre-restore-all ""$CURRENT_DIR"/scripts/rename_session_windows.py --disable_rename_hook"
-tmux set -g @resurrect-hook-post-restore-all ""$CURRENT_DIR"/scripts/rename_session_windows.py --enable_rename_hook"
+tmux set -g @resurrect-hook-post-restore-all ""$CURRENT_DIR"/scripts/rename_session_windows.py --post_restore"
