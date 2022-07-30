@@ -31,17 +31,49 @@ def set_option(server: libtmux.Server, option: str, val: str):
 
 
 def get_window_option(server: libtmux.Server, window_id: Optional[str], option: str, default: Any) -> Any:
+    return get_window_tmux_option(server, window_id, f'{OPTIONS_PREFIX}{option}', default, do_eval=True)
+
+def get_window_tmux_option(server: libtmux.Server, window_id: Optional[str], option: str, default: Any, do_eval: bool = False) -> Any:
     arguments = ['show-option', '-wqv']
+
     if window_id is not None:
         arguments.append('-t')
         arguments.append(window_id)
-    arguments.append(f'{OPTIONS_PREFIX}{option}')
+
+    arguments.append(option)
     out = server.cmd(*arguments).stdout
+
     if len(out) == 0:
         return default
 
-    return eval(out[0])
+    if do_eval:
+        return eval(out[0])
 
+    return out[0]
+
+def set_window_tmux_option(server: libtmux.Server, window_id: Optional[str], option: str, value: str) -> Any:
+    arguments = ['set-option', '-wq']
+    if window_id is not None:
+        arguments.append('-t')
+        arguments.append(window_id)
+
+    arguments.append(option)
+    arguments.append(value)
+
+    server.cmd(*arguments)
+
+
+def post_restore(server: libtmux.Server):
+    # Re enable tmux-window-name if `automatic-rename` is on
+    for window in server._list_windows():
+        window_id = window['window_id']
+        if get_window_tmux_option(server, window_id, 'automatic-rename', 'on') == 'on':
+            set_window_tmux_option(server, window_id, f'{OPTIONS_PREFIX}enabled', '1')
+        else:
+            set_window_tmux_option(server, window_id, f'{OPTIONS_PREFIX}enabled', '0')
+
+    # Enable rename hook to enable tmux-window-name on later windows
+    enable_user_rename_hook(server)
 
 def enable_user_rename_hook(server: libtmux.Server):
     """
@@ -151,7 +183,11 @@ def get_session_active_panes(session: libtmux.Session) -> List[Mapping[str, Any]
 def rename_window(server: libtmux.Server, window_id: str, window_name: str, max_name_len: int, use_tilde: bool):
     if use_tilde:
         window_name = window_name.replace(HOME_DIR, '~')
-    server.cmd('rename-window', '-t', window_id, window_name[:max_name_len])
+
+    window_name = window_name[:max_name_len]
+    server.cmd('rename-window', '-t', window_id, window_name)
+    set_window_tmux_option(server, window_id, 'automatic-rename-format', window_name) # Setting format the window name itself to make automatic-rename rename to to the same name
+    set_window_tmux_option(server, window_id, 'automatic-rename', 'on') # Turn on automatic-rename to make resurrect remeber the option
 
 def get_panes_programs(session: libtmux.Session, options: Options):
     session_active_panes = get_session_active_panes(session)
@@ -226,6 +262,7 @@ def main():
     parser.add_argument('--print_programs', action='store_true', help='Prints full name of the programs in the session')
     parser.add_argument('--enable_rename_hook', action='store_true', help='Enables rename hook, for internal use')
     parser.add_argument('--disable_rename_hook', action='store_true', help='Enables rename hook, for internal use')
+    parser.add_argument('--post_restore', action='store_true', help='Restore tmux enabled option from automatic-rename, for internal use, enables rename hook too')
 
     args = parser.parse_args()
     if args.print_programs:
@@ -234,6 +271,8 @@ def main():
         enable_user_rename_hook(server)
     elif args.disable_rename_hook:
         disable_user_rename_hook(server)
+    elif args.post_restore:
+        post_restore(server)
     else:
         rename_windows(server)
 
