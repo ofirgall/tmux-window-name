@@ -71,6 +71,17 @@ You can `tmux rename-window` manually to set your own window names, to re-enable
 
 Make sure your configuration/other plugins doesn't turn on `automatic-rename` and doesn't rename your windows.
 
+### Automatic rename after changing dir
+By default `tmux-window-name` hooks `after-select-window` which trigged when switching windows, you can add hook in your `.shellrc` to execute `tmux-window-name`
+##### .zshrc
+```bash
+tmux-window-name() {
+	$TMUX_PLUGIN_MANAGER_PATH/tmux-window-name/scripts/rename_session_windows.py
+}
+
+add-zsh-hook chpwd tmux-window-name
+```
+
 #### Hooks Used
 Make sure the hooks that used aren't overridden.
 * @resurrect-hook-pre-restore-all

@@ -151,6 +151,9 @@ def get_current_program(running_programs: List[bytes], pid: int, options: Option
             program = program[1:]
             program_name = program[0].decode()
 
+            if len(program) > 1 and "scripts/rename_session_windows.py" in program[1].decode():
+                continue
+
             if program_name in options.ignored_programs:
                 continue
 
