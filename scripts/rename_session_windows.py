@@ -194,7 +194,11 @@ def rename_window(server: libtmux.Server, window_id: str, window_name: str, max_
 
 def get_panes_programs(session: libtmux.Session, options: Options):
     session_active_panes = get_session_active_panes(session)
-    running_programs = subprocess.check_output(['ps', '-a', '-oppid,command']).splitlines()[1:]
+    try:
+        running_programs = subprocess.check_output(['ps', '-a', '-oppid,command']).splitlines()[1:]
+    # can occur if ps has empty output
+    except subprocess.CalledProcessError:
+        running_programs = []
 
     return [Pane(p, get_current_program(running_programs, int(p['pane_pid']), options)) for p in session_active_panes]
 
