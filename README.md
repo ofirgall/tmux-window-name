@@ -16,7 +16,7 @@ A plugin to name your tmux windows smartly, like IDE's.
 * tmux (Tested on 3.0a)
 * Python 3.6.8+ (Maybe can be lower, tested on 3.6.8)
 * pip
-* [libtmux](https://github.com/tmux-python/libtmux)
+* [libtmux](https://github.com/tmux-python/libtmux) <0.16
 
 ## Use case
 
@@ -110,7 +110,7 @@ To make the shortest path as possible the plugin finds the shortest not common p
 _**Note**_: Make sure you are using the `user` python and not `sudo` python or `virutalenv` python!
 
 ```sh
-python3 -m pip install libtmux --user
+python3 -m pip install --user libtmux==0.16
 ```
 
 ### Install dataclasses (for Python 3.6.X only)
