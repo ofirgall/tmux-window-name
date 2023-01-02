@@ -146,7 +146,7 @@ $ git clone https://github.com/ofirgall/tmux-window-name.git ~/clone/path
 Add this line to your .tmux.conf:
 
 ```tmux.conf
-run-shell ~/clone/path/tmux-window-name.tmux
+run-shell ~/clone/path/tmux_window_name.tmux
 ```
 
 Reload TMUX environment with:
