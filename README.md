@@ -110,7 +110,7 @@ To make the shortest path as possible the plugin finds the shortest not common p
 _**Note**_: Make sure you are using the `user` python and not `sudo` python or `virutalenv` python!
 
 ```sh
-python3 -m pip install --user libtmux==0.16
+python3 -m pip install --user libtmux==0.16.1
 ```
 
 ### Install dataclasses (for Python 3.6.X only)
