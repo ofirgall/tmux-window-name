@@ -221,6 +221,19 @@ set -g @tmux_window_name_substitute_sets "[('.+ipython([32])', 'ipython\g<1>'), 
 	# 2: removing `bash /long/path/for/bashscript`
 ```
 
+### `@tmux_window_name_dir_substitute_sets`
+
+Replace dir lines with [re.sub](https://docs.python.org/3/library/re.html#re.sub). \
+The options expect list of tuples with 2 elements, `pattern` and `repl` as above. 
+E.g: The example below will replace `tmux-resurrect` with `resurrect`
+
+```tmux.conf
+set -g @tmux_window_name_dir_substitute_sets "[('tmux-(.+)', '\\g<1>')]"
+
+# Default Value:
+set -g @tmux_window_name_dir_substitute_sets "[]"
+```
+
 ---
 
 # Testing
