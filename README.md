@@ -189,7 +189,7 @@ set -g @tmux_window_name_ignored_programs "['sqlite3']" # Default is []
 Maximum name length of a window
 
 ```tmux.conf
-set -g @tmux_window_max_name_len "20"
+set -g @tmux_window_name_max_name_len "20"
 ```
 
 ### `@tmux_window_name_use_tilde`
