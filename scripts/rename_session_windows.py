@@ -152,7 +152,7 @@ def get_current_program(running_programs: List[bytes], pane: TmuxPane, options: 
         program = program.split()
 
         # if pid matches parse program
-        if int(program[0]) == pane.pane_pid:
+        if int(program[0]) == int(pane.pane_pid):
             program = program[1:]
             program_name = program[0].decode()
 
