@@ -2,11 +2,13 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, List, Mapping, Optional, Tuple
+from typing import  List, Optional, Tuple
+
+from libtmux.pane import Pane as TmuxPane
 
 @dataclass
 class Pane:
-    info: Mapping[str, Any]
+    info: TmuxPane
     program: Optional[str]
 
 @dataclass
@@ -17,7 +19,7 @@ class DisplayedPath:
 
     @staticmethod
     def from_pane(pane: Pane):
-        path = Path(pane.info['pane_current_path'])
+        path = Path(str(pane.info.pane_current_path))
         return DisplayedPath(pane, path, Path(path.name))
 
 def get_uncommon_path(a: Path, b: Path) -> Tuple[Path, Path]:
