@@ -163,7 +163,7 @@ _**Note**_: All options are evaluated with [eval](https://docs.python.org/3/libr
 Shell programs, will show dir instead of the program
 
 ```tmux.conf
-set -g @tmux_window_name_shells "['zsh', 'bash', 'sh']"
+set -g @tmux_window_name_shells "['bash', 'fish', 'sh', 'zsh']"
 ```
 
 ### `@tmux_window_name_dir_programs`
