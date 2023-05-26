@@ -113,7 +113,7 @@ def tmux_guard(server: Server) -> Iterator[bool]:
 
 @dataclass
 class Options:
-    shells: List[str] = field(default_factory=lambda: ['zsh', 'bash', 'sh'])
+    shells: List[str] = field(default_factory=lambda: ['bash', 'fish', 'sh', 'zsh'])
     dir_programs: List[str] = field(default_factory=lambda: ['nvim', 'vim', 'vi', 'git'])
     ignored_programs: List[str] = field(default_factory=lambda: [])
     max_name_len: int = 20
