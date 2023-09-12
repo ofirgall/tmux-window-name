@@ -236,6 +236,22 @@ set -g @tmux_window_name_dir_substitute_sets "[]"
 
 ---
 
+## Debug Configuration Options
+
+### `@tmux_window_name_log_level`
+
+Set log level of the script
+
+```tmux.conf
+# Enable debug logs
+set -g @tmux_window_name_log_level "'DEBUG'"
+
+# Default Value:
+set -g @tmux_window_name_log_level "'WARNING'"
+```
+
+---
+
 # Testing
 Run `pytest` at the root dir
 

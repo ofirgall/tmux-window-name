@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import logging
+import logging.config
 import subprocess
 import os
 import re
@@ -120,6 +122,7 @@ class Options:
     use_tilde: bool = False
     substitute_sets: List[Tuple] = field(default_factory=lambda: [('.+ipython([32])', r'ipython\g<1>'), (r'^(/usr)?/bin/(.+)', r'\g<2>'), ('(bash) (.+)/(.+[ $])(.+)', '\g<3>\g<4>')])
     dir_substitute_sets: List[Tuple] = field(default_factory=lambda: [])
+    log_level: str = 'WARNING'
 
     @staticmethod
     def from_options(server: Server):
@@ -205,13 +208,12 @@ def get_panes_programs(session: Session, options: Options):
 
     return [Pane(p, get_current_program(running_programs, p, options)) for p in session_active_panes]
 
-def rename_windows(server: Server):
+def rename_windows(server: Server, options: Options):
     with tmux_guard(server) as already_running:
         if already_running:
             return
 
         current_session = get_current_session(server)
-        options = Options.from_options(server)
 
         panes_programs = get_panes_programs(current_session, options)
         panes_with_programs = [p for p in panes_programs if p.program is not None]
@@ -256,9 +258,8 @@ def substitute_name(name: str, substitute_sets: List[Tuple]) -> str:
 
     return name
 
-def print_programs(server: Server):
+def print_programs(server: Server, options: Options):
     current_session = get_current_session(server)
-    options = Options.from_options(server)
 
     panes_programs = get_panes_programs(current_session, options)
 
@@ -276,8 +277,20 @@ def main():
     parser.add_argument('--post_restore', action='store_true', help='Restore tmux enabled option from automatic-rename, for internal use, enables rename hook too')
 
     args = parser.parse_args()
+    options = Options.from_options(server)
+
+    # Clear loggers from other modules
+    logging.config.dictConfig({
+        'version': 1,
+        'disable_existing_loggers': True,
+    })
+
+    log_level = logging._nameToLevel.get(options.log_level, logging.WARNING)
+    logging.basicConfig(level=log_level)
+    logging.debug(f'Args: {args}')
+
     if args.print_programs:
-        print_programs(server)
+        print_programs(server, options)
     elif args.enable_rename_hook:
         enable_user_rename_hook(server)
     elif args.disable_rename_hook:
@@ -285,7 +298,7 @@ def main():
     elif args.post_restore:
         post_restore(server)
     else:
-        rename_windows(server)
+        rename_windows(server, options)
 
 if __name__ == '__main__':
     main()
