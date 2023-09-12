@@ -2,6 +2,7 @@
 
 import logging
 import logging.config
+import tempfile
 import subprocess
 import os
 import re
@@ -305,7 +306,8 @@ def main():
     })
 
     log_level = logging._nameToLevel.get(options.log_level, logging.WARNING)
-    logging.basicConfig(level=log_level, format='%(levelname)s - %(filename)s:%(lineno)d %(funcName)s() %(message)s')
+    log_file = os.path.join(tempfile.gettempdir(), 'tmux-window-name')
+    logging.basicConfig(level=log_level, filename=log_file, format='%(levelname)s - %(filename)s:%(lineno)d %(funcName)s() %(message)s')
     logging.debug(f'Args: {args}')
     logging.debug(f'Options: {options}')
 
