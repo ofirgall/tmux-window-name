@@ -158,16 +158,21 @@ def get_current_program(running_programs: List[bytes], pane: TmuxPane, options: 
         if int(program[0]) == int(pane.pane_pid):
             program = program[1:]
             program_name = program[0].decode()
+            logging.debug(f'{program=} {program_name=}')
 
             if len(program) > 1 and "scripts/rename_session_windows.py" in program[1].decode():
+                logging.debug(f'skipping {program[1]}, its the script')
                 continue
 
             if program_name in options.ignored_programs:
+                logging.debug(f'skipping {program[1]}, its the ignored')
                 continue
 
             # Ignore shells
             if program_name in options.shells:
-                return parse_shell_command(program)
+                shell_program = parse_shell_command(program)
+                logging.debug(f'its a shell, parsed shell program {shell_program}')
+                return shell_program
 
             return b' '.join(program).decode()
 
@@ -190,10 +195,14 @@ def get_session_active_panes(session: Session) -> List[TmuxPane]:
     return [p for p in session.server.panes if p.pane_active == '1' and p.window_id in session_windows_ids]
 
 def rename_window(server: Server, window_id: str, window_name: str, max_name_len: int, use_tilde: bool):
+    logging.debug(f'renaming {window_id=} to {window_name=}')
     if use_tilde:
         window_name = window_name.replace(HOME_DIR, '~')
+        logging.debug(f'replaced tilde with {HOME_DIR=}: {window_name=}')
 
     window_name = window_name[:max_name_len]
+    logging.debug(f'shortened name {window_name=}')
+
     server.cmd('rename-window', '-t', window_id, window_name)
     set_window_tmux_option(server, window_id, 'automatic-rename-format', window_name) # Setting format the window name itself to make automatic-rename rename to to the same name
     set_window_tmux_option(server, window_id, 'automatic-rename', 'on') # Turn on automatic-rename to make resurrect remeber the option
@@ -219,28 +228,36 @@ def rename_windows(server: Server, options: Options):
         panes_with_programs = [p for p in panes_programs if p.program is not None]
         panes_with_dir = [p for p in panes_programs if p.program is None]
 
+        logging.debug(f'{panes_with_programs=}')
+        logging.debug(f'{panes_with_dir=}')
 
         for pane in panes_with_programs:
             enabled_in_window = get_window_option(server, pane.info.window_id, 'enabled', 1)
             if not enabled_in_window:
+                logging.debug(f'tmux winodw isnt enabled in {pane.info.window_id}')
                 continue
 
             program_name = get_program_if_dir(str(pane.program), options.dir_programs)
             if program_name is not None:
+                logging.debug(f'program is a dir program, program:{str(pane.program)}')
                 pane.program = program_name
                 panes_with_dir.append(pane)
                 continue
 
+            logging.debug(f'processing program without dir: {str(pane.program)}')
             pane.program = substitute_name(str(pane.program), options.substitute_sets)
             rename_window(server, str(pane.info.window_id), pane.program, options.max_name_len, options.use_tilde)
 
         exclusive_paths = get_exclusive_paths(panes_with_dir)
+        logging.debug(f'get_exclusive_paths result, input: {panes_with_dir=}, output: {exclusive_paths=}')
 
         for p, display_path in exclusive_paths:
             enabled_in_window = get_window_option(server, p.info.window_id, 'enabled', 1)
             if not enabled_in_window:
+                logging.debug(f'tmux winodw isnt enabled in {p.info.window_id}')
                 continue
 
+            logging.debug(f'processing exclusive_path: {display_path=} {p.program=}')
             display_path = substitute_name(str(display_path), options.dir_substitute_sets)
             if p.program is not None:
                 p.program = substitute_name(p.program, options.substitute_sets)
@@ -253,8 +270,10 @@ def get_current_session(server: Server) -> Session:
     return Session(server, session_id=session_id)
 
 def substitute_name(name: str, substitute_sets: List[Tuple]) -> str:
+    logging.debug(f'substituting {name}')
     for pattern, replacement in substitute_sets:
         name = re.sub(pattern, replacement, name)
+        logging.debug(f'after {pattern=} {replacement=}: {name}')
 
     return name
 
@@ -286,8 +305,9 @@ def main():
     })
 
     log_level = logging._nameToLevel.get(options.log_level, logging.WARNING)
-    logging.basicConfig(level=log_level)
+    logging.basicConfig(level=log_level, format='%(levelname)s - %(filename)s:%(lineno)d %(funcName)s() %(message)s')
     logging.debug(f'Args: {args}')
+    logging.debug(f'Options: {options}')
 
     if args.print_programs:
         print_programs(server, options)
