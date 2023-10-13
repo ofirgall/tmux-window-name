@@ -195,11 +195,8 @@ def get_session_active_panes(session: Session) -> List[TmuxPane]:
 
     return [p for p in session.server.panes if p.pane_active == '1' and p.window_id in session_windows_ids]
 
-def rename_window(server: Server, window_id: str, window_name: str, max_name_len: int, use_tilde: bool):
+def rename_window(server: Server, window_id: str, window_name: str, max_name_len: int):
     logging.debug(f'renaming {window_id=} to {window_name=}')
-    if use_tilde:
-        window_name = window_name.replace(HOME_DIR, '~')
-        logging.debug(f'replaced tilde with {HOME_DIR=}: {window_name=}')
 
     window_name = window_name[:max_name_len]
     logging.debug(f'shortened name {window_name=}')
@@ -226,6 +223,7 @@ def rename_windows(server: Server, options: Options):
         current_session = get_current_session(server)
 
         panes_programs = get_panes_programs(current_session, options)
+        panes_programs = [fix_pane_path(p, options) for p in panes_programs]
         panes_with_programs = [p for p in panes_programs if p.program is not None]
         panes_with_dir = [p for p in panes_programs if p.program is None]
 
@@ -247,7 +245,7 @@ def rename_windows(server: Server, options: Options):
 
             logging.debug(f'processing program without dir: {str(pane.program)}')
             pane.program = substitute_name(str(pane.program), options.substitute_sets)
-            rename_window(server, str(pane.info.window_id), pane.program, options.max_name_len, options.use_tilde)
+            rename_window(server, str(pane.info.window_id), pane.program, options.max_name_len)
 
         exclusive_paths = get_exclusive_paths(panes_with_dir)
         logging.debug(f'get_exclusive_paths result, input: {panes_with_dir=}, output: {exclusive_paths=}')
@@ -264,7 +262,20 @@ def rename_windows(server: Server, options: Options):
                 p.program = substitute_name(p.program, options.substitute_sets)
                 display_path = f'{p.program}:{display_path}'
 
-            rename_window(server, str(p.info.window_id), str(display_path), options.max_name_len, options.use_tilde)
+            rename_window(server, str(p.info.window_id), str(display_path), options.max_name_len)
+
+# Fix pane path according to the options
+def fix_pane_path(pane: Pane, options: Options) -> Pane:
+    path = pane.info.pane_current_path
+    if path is None:
+        return pane
+
+    if options.use_tilde:
+        path = path.replace(HOME_DIR, '~')
+        logging.debug(f'replaced tilde with {HOME_DIR=}: {path=}')
+
+    pane.info.pane_current_path = path
+    return pane
 
 def get_current_session(server: Server) -> Session:
     session_id = server.cmd('display-message', '-p', '#{session_id}').stdout[0]
