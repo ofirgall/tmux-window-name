@@ -22,6 +22,7 @@ OPTIONS_PREFIX = '@tmux_window_name_'
 HOOK_INDEX = 8921
 
 HOME_DIR = os.path.expanduser('~')
+USR_BIN_REMOVER = (r'^(/usr)?/bin/(.+)', r'\g<2>')
 
 def get_option(server: Server, option: str, default: Any) -> Any:
     out = server.cmd('show-option', '-gv', f'{OPTIONS_PREFIX}{option}').stdout
@@ -121,7 +122,7 @@ class Options:
     ignored_programs: List[str] = field(default_factory=lambda: [])
     max_name_len: int = 20
     use_tilde: bool = False
-    substitute_sets: List[Tuple] = field(default_factory=lambda: [('.+ipython([32])', r'ipython\g<1>'), (r'^(/usr)?/bin/(.+)', r'\g<2>'), ('(bash) (.+)/(.+[ $])(.+)', '\g<3>\g<4>')])
+    substitute_sets: List[Tuple] = field(default_factory=lambda: [('.+ipython([32])', r'ipython\g<1>'), USR_BIN_REMOVER, ('(bash) (.+)/(.+[ $])(.+)', '\g<3>\g<4>')])
     dir_substitute_sets: List[Tuple] = field(default_factory=lambda: [])
     log_level: str = 'WARNING'
 
@@ -159,18 +160,19 @@ def get_current_program(running_programs: List[bytes], pane: TmuxPane, options: 
         if int(program[0]) == int(pane.pane_pid):
             program = program[1:]
             program_name = program[0].decode()
-            logging.debug(f'{program=} {program_name=}')
+            program_name_stripped = re.sub(USR_BIN_REMOVER[0], USR_BIN_REMOVER[1], program_name)
+            logging.debug(f'{program=} {program_name=} {program_name_stripped=}')
 
             if len(program) > 1 and "scripts/rename_session_windows.py" in program[1].decode():
                 logging.debug(f'skipping {program[1]}, its the script')
                 continue
 
-            if program_name in options.ignored_programs:
-                logging.debug(f'skipping {program[1]}, its the ignored')
+            if program_name_stripped in options.ignored_programs:
+                logging.debug(f'skipping {program[1]}, its ignored')
                 continue
 
             # Ignore shells
-            if program_name in options.shells:
+            if program_name_stripped in options.shells:
                 shell_program = parse_shell_command(program)
                 logging.debug(f'its a shell, parsed shell program {shell_program}')
                 return shell_program
@@ -205,7 +207,7 @@ def rename_window(server: Server, window_id: str, window_name: str, max_name_len
     set_window_tmux_option(server, window_id, 'automatic-rename-format', window_name) # Setting format the window name itself to make automatic-rename rename to to the same name
     set_window_tmux_option(server, window_id, 'automatic-rename', 'on') # Turn on automatic-rename to make resurrect remeber the option
 
-def get_panes_programs(session: Session, options: Options):
+def get_panes_programs(session: Session, options: Options) -> List[Pane]:
     session_active_panes = get_session_active_panes(session)
     try:
         running_programs = subprocess.check_output(['ps', '-a', '-oppid,command']).splitlines()[1:]

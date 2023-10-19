@@ -9,7 +9,7 @@ from libtmux.pane import Pane as TmuxPane
 @dataclass
 class Pane:
     info: TmuxPane
-    program: Optional[str]
+    program: Optional[str] # None when no program is running
 
 @dataclass
 class DisplayedPath:
