@@ -161,7 +161,7 @@ def get_current_program(running_programs: List[bytes], pane: TmuxPane, options: 
             program = program[1:]
             program_name = program[0].decode()
             program_name_stripped = re.sub(USR_BIN_REMOVER[0], USR_BIN_REMOVER[1], program_name)
-            logging.debug(f'{program=} {program_name=} {program_name_stripped=}')
+            logging.debug(f'program={program} program_name={program_name} program_name_stripped={program_name_stripped}')
 
             if len(program) > 1 and "scripts/rename_session_windows.py" in program[1].decode():
                 logging.debug(f'skipping {program[1]}, its the script')
@@ -198,10 +198,10 @@ def get_session_active_panes(session: Session) -> List[TmuxPane]:
     return [p for p in session.server.panes if p.pane_active == '1' and p.window_id in session_windows_ids]
 
 def rename_window(server: Server, window_id: str, window_name: str, max_name_len: int):
-    logging.debug(f'renaming {window_id=} to {window_name=}')
+    logging.debug(f'renaming window_id={window_id} to window_name={window_name}')
 
     window_name = window_name[:max_name_len]
-    logging.debug(f'shortened name {window_name=}')
+    logging.debug(f'shortened name window_name={window_name}')
 
     server.cmd('rename-window', '-t', window_id, window_name)
     set_window_tmux_option(server, window_id, 'automatic-rename-format', window_name) # Setting format the window name itself to make automatic-rename rename to to the same name
@@ -229,8 +229,8 @@ def rename_windows(server: Server, options: Options):
         panes_with_programs = [p for p in panes_programs if p.program is not None]
         panes_with_dir = [p for p in panes_programs if p.program is None]
 
-        logging.debug(f'{panes_with_programs=}')
-        logging.debug(f'{panes_with_dir=}')
+        logging.debug(f'panes_with_programs={panes_with_programs}')
+        logging.debug(f'panes_with_dir={panes_with_dir}')
 
         for pane in panes_with_programs:
             enabled_in_window = get_window_option(server, pane.info.window_id, 'enabled', 1)
@@ -250,7 +250,7 @@ def rename_windows(server: Server, options: Options):
             rename_window(server, str(pane.info.window_id), pane.program, options.max_name_len)
 
         exclusive_paths = get_exclusive_paths(panes_with_dir)
-        logging.debug(f'get_exclusive_paths result, input: {panes_with_dir=}, output: {exclusive_paths=}')
+        logging.debug(f'get_exclusive_paths result, input: panes_with_dir={panes_with_dir}, output: exclusive_paths={exclusive_paths}')
 
         for p, display_path in exclusive_paths:
             enabled_in_window = get_window_option(server, p.info.window_id, 'enabled', 1)
@@ -258,7 +258,7 @@ def rename_windows(server: Server, options: Options):
                 logging.debug(f'tmux winodw isnt enabled in {p.info.window_id}')
                 continue
 
-            logging.debug(f'processing exclusive_path: {display_path=} {p.program=}')
+            logging.debug(f'processing exclusive_path: display_path={display_path} p.program={p.program}')
             display_path = substitute_name(str(display_path), options.dir_substitute_sets)
             if p.program is not None:
                 p.program = substitute_name(p.program, options.substitute_sets)
@@ -274,7 +274,7 @@ def fix_pane_path(pane: Pane, options: Options) -> Pane:
 
     if options.use_tilde:
         path = path.replace(HOME_DIR, '~')
-        logging.debug(f'replaced tilde with {HOME_DIR=}: {path=}')
+        logging.debug(f'replaced tilde with HOME_DIR={HOME_DIR}: path={path}')
 
     pane.info.pane_current_path = path
     return pane
@@ -287,7 +287,7 @@ def substitute_name(name: str, substitute_sets: List[Tuple]) -> str:
     logging.debug(f'substituting {name}')
     for pattern, replacement in substitute_sets:
         name = re.sub(pattern, replacement, name)
-        logging.debug(f'after {pattern=} {replacement=}: {name}')
+        logging.debug(f'after pattern={pattern} replacement={replacement}: {name}')
 
     return name
 
