@@ -71,6 +71,20 @@ You can `tmux rename-window` manually to set your own window names, to re-enable
 
 Make sure your configuration/other plugins doesn't turn on `automatic-rename` and doesn't rename your windows.
 
+### Automatic rename after launching neovim
+By default `tmux-window-name` hooks `after-select-window` which trigged when switching windows.
+
+You can add autocmd to rename after nvim launches as so:
+```lua
+local uv = vim.loop
+
+vim.api.nvim_create_autocmd('VimEnter', {
+	callback = function()
+		uv.spawn(vim.env.TMUX_PLUGIN_MANAGER_PATH .. '/tmux-window-name/scripts/rename_session_windows.py', {})
+	end,
+})
+```
+
 ### Automatic rename after changing dir
 By default `tmux-window-name` hooks `after-select-window` which trigged when switching windows, you can add hook in your `.shellrc` to execute `tmux-window-name`
 ##### .zshrc
