@@ -168,7 +168,7 @@ def get_current_program(running_programs: List[bytes], pane: TmuxPane, options: 
                 continue
 
             if program_name_stripped in options.ignored_programs:
-                logging.debug(f'skipping {program[1]}, its ignored')
+                logging.debug(f'skipping {program_name_stripped}, its ignored')
                 continue
 
             # Ignore shells
