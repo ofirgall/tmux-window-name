@@ -124,6 +124,7 @@ class Options:
     use_tilde: bool = False
     substitute_sets: List[Tuple] = field(default_factory=lambda: [(r'.+ipython([32])', r'ipython\g<1>'), USR_BIN_REMOVER, (r'(bash) (.+)/(.+[ $])(.+)', '\g<3>\g<4>')])
     dir_substitute_sets: List[Tuple] = field(default_factory=lambda: [])
+    show_program_args: bool = True
     log_level: str = 'WARNING'
 
     @staticmethod
@@ -176,6 +177,9 @@ def get_current_program(running_programs: List[bytes], pane: TmuxPane, options: 
                 shell_program = parse_shell_command(program)
                 logging.debug(f'its a shell, parsed shell program {shell_program}')
                 return shell_program
+
+            if not options.show_program_args:
+                return program[0].decode()
 
             return b' '.join(program).decode()
 

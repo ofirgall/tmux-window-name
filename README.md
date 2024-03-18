@@ -216,6 +216,14 @@ Replace `$HOME` with `~` in window names
 set -g @tmux_window_name_use_tilde "False"
 ```
 
+### `@tmux_window_name_show_program_args`
+
+Show arguments that the program has been ran with.
+
+```tmux.conf
+set -g @tmux_window_name_show_program_args "True"
+```
+
 ### `@tmux_window_name_substitute_sets`
 
 Replace program command lines with [re.sub](https://docs.python.org/3/library/re.html#re.sub). \
