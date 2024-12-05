@@ -236,10 +236,10 @@ Note: use `~/.tmux/plugins/tmux-window-name/scripts/rename_session_windows.py --
 set -g @tmux_window_name_substitute_sets "[('.+ipython2', 'ipython2'), ('.+ipython3', 'ipython3')]"
 
 # Same example but with regex groups
-set -g @tmux_window_name_substitute_sets "[('.+ipython([32])', 'ipython\g<1>')]"
+set -g @tmux_window_name_substitute_sets "[('.+ipython([32])', r'ipython\\g<1>')]"
 
 # Default Value:
-set -g @tmux_window_name_substitute_sets "[('.+ipython([32])', 'ipython\g<1>'), ('^(/usr)?/bin/(.+)', '\g<2>'), ('(bash) (.+)/(.+[ $])(.+)', '\g<3>\g<4>')]"
+set -g @tmux_window_name_substitute_sets "[('.+ipython([32])', r'ipython\\g<1>'), ('^(/usr)?/bin/(.+)', r'\\g<2>'), ('(bash) (.+)/(.+[ $])(.+)', r'\\g<3>\\g<4>')]"
 	# 0: from example
 	# 1: removing `/usr/bin` and `/bin` prefixes of files
 	# 2: removing `bash /long/path/for/bashscript`
@@ -252,7 +252,7 @@ The options expect list of tuples with 2 elements, `pattern` and `repl` as above
 E.g: The example below will replace `tmux-resurrect` with `resurrect`
 
 ```tmux.conf
-set -g @tmux_window_name_dir_substitute_sets "[('tmux-(.+)', '\\g<1>')]"
+set -g @tmux_window_name_dir_substitute_sets "[('tmux-(.+)', r'\\g<1>')]"
 
 # Default Value:
 set -g @tmux_window_name_dir_substitute_sets "[]"
