@@ -2,14 +2,16 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import  List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from libtmux.pane import Pane as TmuxPane
+
 
 @dataclass
 class Pane:
     info: TmuxPane
-    program: Optional[str] # None when no program is running
+    program: Optional[str]  # None when no program is running
+
 
 @dataclass
 class DisplayedPath:
@@ -19,8 +21,11 @@ class DisplayedPath:
 
     @staticmethod
     def from_pane(pane: Pane):
-        path = Path(str(pane.info.pane_current_path))
+        # Note that, at runtime, `pane.info` here is actually a dict.
+        path = Path(str(pane.info["pane_current_path"]))
+
         return DisplayedPath(pane, path, Path(path.name))
+
 
 def get_uncommon_path(a: Path, b: Path) -> Tuple[Path, Path]:
     """Get 2 uncommon path between paths
@@ -46,6 +51,7 @@ def get_uncommon_path(a: Path, b: Path) -> Tuple[Path, Path]:
             break
 
     return Path(*a.parts[x:]), Path(*b.parts[x:])
+
 
 def get_exclusive_paths(panes: List[Pane]) -> List[Tuple[Pane, Path]]:
     """Get exclusive path for each pane (better explaining in the README)
@@ -82,10 +88,11 @@ def get_exclusive_paths(panes: List[Pane]) -> List[Tuple[Pane, Path]]:
             intersected_paths.append(y)
 
         for y in intersected_paths:
-            exc_paths[x].display, exc_paths[y].display = get_uncommon_path(exc_paths[x].full, exc_paths[y].full)
+            exc_paths[x].display, exc_paths[y].display = get_uncommon_path(
+                exc_paths[x].full, exc_paths[y].full
+            )
 
             for same_path in same_paths_different_programs:
                 exc_paths[same_path].display = exc_paths[x].display
 
     return [(p.pane, p.display) for p in exc_paths]
-
