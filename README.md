@@ -76,12 +76,10 @@ By default `tmux-window-name` hooks `after-select-window` which trigged when swi
 
 You can add autocmd to rename after nvim launches and stops as so:
 ```lua
-local uv = vim.loop
-
 vim.api.nvim_create_autocmd({ 'VimEnter', 'VimLeave' }, {
 	callback = function()
 		if vim.env.TMUX_PLUGIN_MANAGER_PATH then
-			uv.spawn(vim.env.TMUX_PLUGIN_MANAGER_PATH .. '/tmux-window-name/scripts/rename_session_windows.py', {})
+			vim.system({ vim.env.TMUX_PLUGIN_MANAGER_PATH .. '/tmux-window-name/scripts/rename_session_windows.py' })
 		end
 	end,
 })
