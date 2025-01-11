@@ -3,13 +3,18 @@
 # I hate this but i don't want to make it a pip package, its a script.
 import sys
 from typing import List, Optional, Tuple
+from dataclasses import dataclass
 sys.path.append('scripts/')
 
 from pathlib import Path
 from path_utils import get_exclusive_paths, Pane
 
+@dataclass
+class FakePane:
+    pane_current_path: str | None
+
 def _fake_pane(path: str, program: Optional[str]):
-    return Pane({'pane_current_path': path}, program)
+    return Pane(FakePane(path), program)
 
 def _check(expected: List[Tuple[str, Optional[str], str]]):
     """check expected displayed paths
