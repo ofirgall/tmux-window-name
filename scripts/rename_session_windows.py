@@ -122,7 +122,7 @@ class Options:
     ignored_programs: List[str] = field(default_factory=lambda: [])
     max_name_len: int = 20
     use_tilde: bool = False
-    substitute_sets: List[Tuple] = field(default_factory=lambda: [(r'.+ipython([32])', r'ipython\g<1>'), USR_BIN_REMOVER, (r'(bash) (.+)/(.+[ $])(.+)', r'\g<3>\g<4>')])
+    substitute_sets: List[Tuple] = field(default_factory=lambda: [(r'.+ipython([32])', r'ipython\g<1>'), USR_BIN_REMOVER, (r'(bash) (.+)/(.+[ $])(.+)', r'\g<3>\g<4>'), (r'.+poetry shell', 'poetry')])
     dir_substitute_sets: List[Tuple] = field(default_factory=lambda: [])
     show_program_args: bool = True
     log_level: str = 'WARNING'

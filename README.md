@@ -239,10 +239,11 @@ set -g @tmux_window_name_substitute_sets "[('.+ipython2', 'ipython2'), ('.+ipyth
 set -g @tmux_window_name_substitute_sets "[('.+ipython([32])', 'ipython\g<1>')]"
 
 # Default Value:
-set -g @tmux_window_name_substitute_sets "[('.+ipython([32])', 'ipython\g<1>'), ('^(/usr)?/bin/(.+)', '\g<2>'), ('(bash) (.+)/(.+[ $])(.+)', '\g<3>\g<4>')]"
+set -g @tmux_window_name_substitute_sets "[('.+ipython([32])', 'ipython\g<1>'), ('^(/usr)?/bin/(.+)', '\g<2>'), ('(bash) (.+)/(.+[ $])(.+)', '\g<3>\g<4>'), ('.+poetry shell', 'poetry')]"
 	# 0: from example
 	# 1: removing `/usr/bin` and `/bin` prefixes of files
 	# 2: removing `bash /long/path/for/bashscript`
+	# 3: changing "poetry shell" to "poetry"
 ```
 
 ### `@tmux_window_name_dir_substitute_sets`
