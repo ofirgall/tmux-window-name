@@ -7,7 +7,6 @@ from dataclasses import dataclass
 
 sys.path.append('scripts/')
 
-from pathlib import Path
 from path_utils import get_exclusive_paths, Pane
 
 
