@@ -278,6 +278,9 @@ set -g @tmux_window_name_log_level "'WARNING'"
 
 ---
 
+# Development
+Run `ruff format` before applying PR
+
 # Testing
 Run `pytest` at the root dir
 
