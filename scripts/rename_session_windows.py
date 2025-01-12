@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
+from __future__ import annotations
 
 import logging
 import logging.config
-import tempfile
-import subprocess
 import os
 import re
-from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any, Iterator, List, Optional, Tuple
+import subprocess
+import tempfile
 from argparse import ArgumentParser
 from contextlib import contextmanager
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Iterator
 
+from libtmux.pane import Pane as TmuxPane
 from libtmux.server import Server
 from libtmux.session import Session
-from libtmux.pane import Pane as TmuxPane
-
-from path_utils import get_exclusive_paths, Pane
+from path_utils import Pane, get_exclusive_paths
 
 OPTIONS_PREFIX = '@tmux_window_name_'
 HOOK_INDEX = 8921
@@ -37,12 +37,17 @@ def set_option(server: Server, option: str, val: str):
     server.cmd('set-option', '-g', f'{OPTIONS_PREFIX}{option}', val)
 
 
-def get_window_option(server: Server, window_id: Optional[str], option: str, default: Any) -> Any:
+def get_window_option(server: Server, window_id: str | None, option: str, default: Any) -> Any:
     return get_window_tmux_option(server, window_id, f'{OPTIONS_PREFIX}{option}', default, do_eval=True)
 
 
 def get_window_tmux_option(
-    server: Server, window_id: Optional[str], option: str, default: Any, do_eval: bool = False
+    server: Server,
+    window_id: str | None,
+    option: str,
+    default: Any,
+    *,
+    do_eval: bool = False,
 ) -> Any:
     arguments = ['show-option', '-wqv']
 
@@ -62,7 +67,7 @@ def get_window_tmux_option(
     return out[0]
 
 
-def set_window_tmux_option(server: Server, window_id: Optional[str], option: str, value: str) -> Any:
+def set_window_tmux_option(server: Server, window_id: str | None, option: str, value: str) -> Any:
     arguments = ['set-option', '-wq']
     if window_id is not None:
         arguments.append('-t')
@@ -128,12 +133,12 @@ def tmux_guard(server: Server) -> Iterator[bool]:
 
 @dataclass
 class Options:
-    shells: List[str] = field(default_factory=lambda: ['bash', 'fish', 'sh', 'zsh'])
-    dir_programs: List[str] = field(default_factory=lambda: ['nvim', 'vim', 'vi', 'git'])
-    ignored_programs: List[str] = field(default_factory=lambda: [])
+    shells: list[str] = field(default_factory=lambda: ['bash', 'fish', 'sh', 'zsh'])
+    dir_programs: list[str] = field(default_factory=lambda: ['nvim', 'vim', 'vi', 'git'])
+    ignored_programs: list[str] = field(default_factory=list)
     max_name_len: int = 20
     use_tilde: bool = False
-    substitute_sets: List[Tuple] = field(
+    substitute_sets: list[tuple] = field(
         default_factory=lambda: [
             (r'.+ipython([32])', r'ipython\g<1>'),
             USR_BIN_REMOVER,
@@ -141,7 +146,7 @@ class Options:
             (r'.+poetry shell', 'poetry'),
         ]
     )
-    dir_substitute_sets: List[Tuple] = field(default_factory=lambda: [])
+    dir_substitute_sets: list[tuple] = field(default_factory=list)
     show_program_args: bool = True
     log_level: str = 'WARNING'
 
@@ -149,7 +154,7 @@ class Options:
     def from_options(server: Server):
         fields = Options.__dataclass_fields__
 
-        def default_field_value(f: field):
+        def default_field_value(f):
             if callable(f.default_factory):
                 return f.default_factory()
             return f.default
@@ -161,7 +166,7 @@ class Options:
         return Options(**fields_values)
 
 
-def parse_shell_command(shell_cmd: List[bytes]) -> Optional[str]:
+def parse_shell_command(shell_cmd: list[bytes]) -> str | None:
     # Only shell
     if len(shell_cmd) == 1:
         return None
@@ -172,7 +177,7 @@ def parse_shell_command(shell_cmd: List[bytes]) -> Optional[str]:
     return ' '.join(shell_cmd_str[1:])
 
 
-def get_current_program(running_programs: List[bytes], pane: TmuxPane, options: Options) -> Optional[str]:
+def get_current_program(running_programs: list[bytes], pane: TmuxPane, options: Options) -> str | None:
     if pane.pane_pid is None:
         raise ValueError(f'Pane id is none, pane: {pane}')
 
@@ -210,7 +215,7 @@ def get_current_program(running_programs: List[bytes], pane: TmuxPane, options: 
     return None
 
 
-def get_program_if_dir(program_line: str, dir_programs: List[str]) -> Optional[str]:
+def get_program_if_dir(program_line: str, dir_programs: list[str]) -> str | None:
     program = program_line.split()
 
     for p in dir_programs:
@@ -242,7 +247,7 @@ def rename_window(server: Server, window_id: str, window_name: str, max_name_len
     )  # Turn on automatic-rename to make resurrect remeber the option
 
 
-def get_panes_programs(session: Session, options: Options) -> List[Pane]:
+def get_panes_programs(session: Session, options: Options) -> list[Pane]:
     session_active_panes = get_session_active_panes(session)
     try:
         running_programs = subprocess.check_output(['ps', '-a', '-oppid,command']).splitlines()[1:]
@@ -324,7 +329,7 @@ def get_current_session(server: Server) -> Session:
     return Session(server, session_id=session_id)
 
 
-def substitute_name(name: str, substitute_sets: List[Tuple]) -> str:
+def substitute_name(name: str, substitute_sets: list[tuple]) -> str:
     logging.debug(f'substituting {name}')
     for pattern, replacement in substitute_sets:
         name = re.sub(pattern, replacement, name)
@@ -347,9 +352,21 @@ def main():
     server = Server()
 
     parser = ArgumentParser('Renames tmux session windows')
-    parser.add_argument('--print_programs', action='store_true', help='Prints full name of the programs in the session')
-    parser.add_argument('--enable_rename_hook', action='store_true', help='Enables rename hook, for internal use')
-    parser.add_argument('--disable_rename_hook', action='store_true', help='Enables rename hook, for internal use')
+    parser.add_argument(
+        '--print_programs',
+        action='store_true',
+        help='Prints full name of the programs in the session',
+    )
+    parser.add_argument(
+        '--enable_rename_hook',
+        action='store_true',
+        help='Enables rename hook, for internal use',
+    )
+    parser.add_argument(
+        '--disable_rename_hook',
+        action='store_true',
+        help='Enables rename hook, for internal use',
+    )
     parser.add_argument(
         '--post_restore',
         action='store_true',
@@ -368,9 +385,11 @@ def main():
     )
 
     log_level = logging._nameToLevel.get(options.log_level, logging.WARNING)
-    log_file = os.path.join(tempfile.gettempdir(), 'tmux-window-name')
+    log_file = Path(tempfile.gettempdir()) / 'tmux-window-name'
     logging.basicConfig(
-        level=log_level, filename=log_file, format='%(levelname)s - %(filename)s:%(lineno)d %(funcName)s() %(message)s'
+        level=log_level,
+        filename=log_file,
+        format='%(levelname)s - %(filename)s:%(lineno)d %(funcName)s() %(message)s',
     )
     logging.debug(f'Args: {args}')
     logging.debug(f'Options: {options}')

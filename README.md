@@ -14,7 +14,7 @@ A plugin to name your tmux windows smartly, like IDE's.
 ## Dependencies
 
 * tmux (Tested on 3.0a)
-* Python 3.6.8+ (Maybe can be lower, tested on 3.6.8)
+* Python 3.7+
 * pip
 * [libtmux](https://github.com/tmux-python/libtmux) >0.16
 
@@ -127,11 +127,6 @@ _**Note**_: Make sure you are using the `user` python and not `sudo` python or `
 
 ```sh
 python3 -m pip install --user libtmux
-```
-
-### Install dataclasses (for Python 3.6.X only)
-```sh
-python3 -m pip install dataclasses --user
 ```
 
 ### Installation with [Tmux Plugin Manager](https://github.com/tmux-plugins/tpm) (recommended)
