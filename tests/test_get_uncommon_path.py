@@ -1,11 +1,10 @@
-#!/usr/bin/env python3
-
 # I hate this but i don't want to make it a pip package, its a script.
 import sys
 
 sys.path.append('scripts/')
 
 from pathlib import Path
+
 from path_utils import get_uncommon_path
 
 

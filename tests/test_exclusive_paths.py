@@ -1,13 +1,12 @@
-#!/usr/bin/env python3
+from __future__ import annotations
 
 # I hate this but i don't want to make it a pip package, its a script.
 import sys
-from typing import List, Optional, Tuple
-from dataclasses import dataclass
 
 sys.path.append('scripts/')
+from dataclasses import dataclass
 
-from path_utils import get_exclusive_paths, Pane
+from path_utils import Pane, get_exclusive_paths
 
 
 @dataclass
@@ -15,15 +14,17 @@ class FakePane:
     pane_current_path: str | None
 
 
-def _fake_pane(path: str, program: Optional[str]):
+def _fake_pane(path: str, program: str | None):
     return Pane(FakePane(path), program)
 
 
-def _check(expected: List[Tuple[str, Optional[str], str]]):
-    """check expected displayed paths
+def _check(expected: list[tuple[str, str | None, str]]):
+    """
+    Check expected displayed paths.
 
     Args:
-        expected (List[Tuple[str, Optional[str], str]]): list of (full_path, program, expected_display)
+        expected: list of (full_path, program, expected_display)
+
     E.g:
         _check([
             ('a/dir', 'p1', 'dir'), # Program p1 in a/dir will display dir (will be formated to p1:dir)
