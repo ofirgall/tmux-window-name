@@ -347,7 +347,7 @@ def print_programs(server: Server, options: Options):
 def main():
     server = Server()
 
-    parser = ArgumentParser('Renames tmux session windows')
+    parser = ArgumentParser('rename_session_windows.py')
     parser.add_argument('--print_programs', action='store_true', help='Prints full name of the programs in the session')
     parser.add_argument('--enable_rename_hook', action='store_true', help='Enables rename hook, for internal use')
     parser.add_argument('--disable_rename_hook', action='store_true', help='Enables rename hook, for internal use')
