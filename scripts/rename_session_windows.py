@@ -248,6 +248,7 @@ def get_panes_programs(session: Session, options: Options) -> List[Pane]:
         running_programs = subprocess.check_output(['ps', '-a', '-oppid,command']).splitlines()[1:]
     # can occur if ps has empty output
     except subprocess.CalledProcessError:
+        logging.warning('nothing returned from `ps -a -oppid,command`')
         running_programs = []
 
     return [Pane(p, get_current_program(running_programs, p, options)) for p in session_active_panes]
