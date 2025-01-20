@@ -176,6 +176,8 @@ def get_current_program(running_programs: List[bytes], pane: TmuxPane, options: 
     if pane.pane_pid is None:
         raise ValueError(f'Pane id is none, pane: {pane}')
 
+    logging.debug(f"searching for active pane's child with pane_pid={pane.pane_pid}")
+
     for program in running_programs:
         program = program.split()
 
