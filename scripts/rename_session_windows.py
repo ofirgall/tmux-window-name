@@ -176,6 +176,8 @@ def get_current_program(running_programs: List[bytes], pane: TmuxPane, options: 
     if pane.pane_pid is None:
         raise ValueError(f'Pane id is none, pane: {pane}')
 
+    logging.debug(f"searching for active pane's child with pane_pid={pane.pane_pid}")
+
     for program in running_programs:
         program = program.split()
 
@@ -246,8 +248,10 @@ def get_panes_programs(session: Session, options: Options) -> List[Pane]:
     session_active_panes = get_session_active_panes(session)
     try:
         running_programs = subprocess.check_output(['ps', '-a', '-oppid,command']).splitlines()[1:]
+        logging.debug(f'running_programs={running_programs}')
     # can occur if ps has empty output
     except subprocess.CalledProcessError:
+        logging.warning('nothing returned from `ps -a -oppid,command`')
         running_programs = []
 
     return [Pane(p, get_current_program(running_programs, p, options)) for p in session_active_panes]
@@ -346,7 +350,7 @@ def print_programs(server: Server, options: Options):
 def main():
     server = Server()
 
-    parser = ArgumentParser('Renames tmux session windows')
+    parser = ArgumentParser('rename_session_windows.py')
     parser.add_argument('--print_programs', action='store_true', help='Prints full name of the programs in the session')
     parser.add_argument('--enable_rename_hook', action='store_true', help='Enables rename hook, for internal use')
     parser.add_argument('--disable_rename_hook', action='store_true', help='Enables rename hook, for internal use')
