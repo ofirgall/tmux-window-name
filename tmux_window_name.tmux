@@ -2,8 +2,8 @@
 
 CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-pip_list=$(python3 -m pip list 2> /dev/null)
-if ! echo "$pip_list" | grep libtmux -q; then
+LIBTMUX_AVAILABLE=$(python -c "import importlib.util; print(importlib.util.find_spec('libtmux') is not None)" 2>/dev/null)
+if [ "$LIBTMUX_AVAILABLE" = "True" ]; then
     tmux display "ERROR: tmux-window-name - Python dependency libtmux not found (Check the README)"
     exit 0
 fi
