@@ -259,6 +259,41 @@ set -g @tmux_window_name_dir_substitute_sets "[('tmux-(.+)', '\\g<1>')]"
 set -g @tmux_window_name_dir_substitute_sets "[]"
 ```
 
+### `@tmux_window_name_icon_style`
+
+Configure how icons are displayed in window names. \
+Available styles:
+- `name`: Show only program name (default)
+- `icon`: Show only icon
+- `name+icon`: Show both icon and program name
+
+```tmux.conf
+# Show only icons
+set -g @tmux_window_name_icon_style "'icon'"
+
+# Show icons with program names
+set -g @tmux_window_name_icon_style "'name+icon'"
+
+# Default Value:
+set -g @tmux_window_name_icon_style "'name'"
+```
+
+### `@tmux_window_name_custom_icons`
+
+Customize icons for specific programs. \
+The value should be a JSON object mapping program names to their icons.
+
+```tmux.conf
+# Custom icons example
+set -g @tmux_window_name_custom_icons '{"python": "🐍", "custom_app": "📦"}'
+
+# Default Value:
+set -g @tmux_window_name_custom_icons '{}'
+```
+
+_**Note**_: Icons can be any Unicode characters, including emoji or Nerd Font icons. \
+If using Nerd Font icons, make sure your terminal supports them.
+
 ---
 
 ## Debug Configuration Options
