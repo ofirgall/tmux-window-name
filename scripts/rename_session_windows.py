@@ -47,14 +47,17 @@ PROGRAM_ICONS = {
     'sh': '',     # nf-dev-terminal
 }
 
-def get_program_icon(program_name: str) -> str:
+def get_program_icon(program_name: str, options: 'Options') -> str:
     """Get the nerd font icon for a program name."""
     # Remove any path components and arguments
     base_name = program_name.split()[0].split('/')[-1]
     # If the name contains a colon, use the part before it
     if ':' in base_name:
         base_name = base_name.split(':')[0]
-    icon = PROGRAM_ICONS.get(base_name, '')
+    
+    # First check custom icons, then fall back to built-in icons
+    icon = options.custom_icons.get(base_name) or PROGRAM_ICONS.get(base_name, '')
+    
     # Decode Unicode escape sequences if present
     if icon.startswith('\\u'):
         icon = icon.encode('utf-8').decode('unicode-escape')
@@ -179,6 +182,7 @@ class Options:
     max_name_len: int = 20
     use_tilde: bool = False
     icon_style: str = 'name'  # Can be: 'name', 'icon', 'name+icon'
+    custom_icons: dict = field(default_factory=lambda: {})  # User-defined program icons
     substitute_sets: List[Tuple] = field(
         default_factory=lambda: [
             (r'.+ipython([32])', r'ipython\g<1>'),
@@ -279,7 +283,7 @@ def rename_window(server: Server, window_id: str, window_name: str, max_name_len
     logging.debug(f'renaming window_id={window_id} to window_name={window_name}')
 
     if options.icon_style in ['icon', 'name+icon']:
-        icon = get_program_icon(window_name)
+        icon = get_program_icon(window_name, options)
         if icon:
             if options.icon_style == 'icon':
                 window_name = icon
@@ -401,7 +405,7 @@ def print_programs(server: Server, options: Options):
         if pane.program:
             program_name = substitute_name(pane.program, options.substitute_sets)
             if options.icon_style in ['icon', 'name+icon']:
-                icon = get_program_icon(program_name)
+                icon = get_program_icon(program_name, options)
                 if icon:
                     if options.icon_style == 'icon':
                         program_name = icon
