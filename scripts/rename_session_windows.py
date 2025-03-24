@@ -77,6 +77,14 @@ def get_option(server: Server, option: str, default: Any) -> Any:
     # Handle string values
     if isinstance(default, str):
         return value
+    # Handle dict values (for custom_icons)
+    if isinstance(default, dict):
+        try:
+            import json
+            return json.loads(value)
+        except json.JSONDecodeError:
+            logging.warning(f"Failed to parse JSON for option {option}, using default")
+            return default
     # Handle other types
     return eval(value)
 
@@ -408,7 +416,7 @@ def print_programs(server: Server, options: Options):
                 icon = get_program_icon(program_name, options)
                 if icon:
                     if options.icon_style == 'icon':
-                        program_name = icon
+                        program_name = f'{icon} '
                     elif options.icon_style == 'name+icon':
                         program_name = f'{icon} {program_name}'
             print(f'{pane.program} -> {program_name}')
