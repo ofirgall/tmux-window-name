@@ -24,28 +24,29 @@ HOOK_INDEX = 8921
 # Mapping of program names to their nerd font icons
 PROGRAM_ICONS = {
     'nvim': '',  # nf-dev-vim
-    'vim': '',   # nf-dev-vim
-    'vi': '',    # nf-dev-vim
-    'git': '',   # nf-dev-git
-    'python': '', # nf-dev-python
-    'node': '',   # nf-dev-nodejs
-    'npm': '',    # nf-dev-nodejs
-    'yarn': '',   # nf-dev-nodejs
-    'docker': '', # nf-dev-docker
-    'kubectl': '', # nf-dev-kubernetes
-    'go': '',     # nf-dev-go
-    'rust': '',   # nf-dev-rust
+    'vim': '',  # nf-dev-vim
+    'vi': '',  # nf-dev-vim
+    'git': '',  # nf-dev-git
+    'python': '',  # nf-dev-python
+    'node': '',  # nf-dev-nodejs
+    'npm': '',  # nf-dev-nodejs
+    'yarn': '',  # nf-dev-nodejs
+    'docker': '',  # nf-dev-docker
+    'kubectl': '',  # nf-dev-kubernetes
+    'go': '',  # nf-dev-go
+    'rust': '',  # nf-dev-rust
     'cargo': '',  # nf-dev-rust
-    'php': '',    # nf-dev-php
-    'ruby': '',   # nf-dev-ruby
-    'java': '',   # nf-dev-java
-    'mvn': '',    # nf-dev-java
-    'gradle': '', # nf-dev-java
-    'bash': '',   # nf-dev-terminal
-    'zsh': '',    # nf-dev-terminal
-    'fish': '',   # nf-dev-terminal
-    'sh': '',     # nf-dev-terminal
+    'php': '',  # nf-dev-php
+    'ruby': '',  # nf-dev-ruby
+    'java': '',  # nf-dev-java
+    'mvn': '',  # nf-dev-java
+    'gradle': '',  # nf-dev-java
+    'bash': '',  # nf-dev-terminal
+    'zsh': '',  # nf-dev-terminal
+    'fish': '',  # nf-dev-terminal
+    'sh': '',  # nf-dev-terminal
 }
+
 
 def get_program_icon(program_name: str, options: 'Options') -> str:
     """Get the nerd font icon for a program name."""
@@ -54,15 +55,16 @@ def get_program_icon(program_name: str, options: 'Options') -> str:
     # If the name contains a colon, use the part before it
     if ':' in base_name:
         base_name = base_name.split(':')[0]
-    
+
     # First check custom icons, then fall back to built-in icons
     icon = options.custom_icons.get(base_name) or PROGRAM_ICONS.get(base_name, '')
-    
+
     # Decode Unicode escape sequences if present
     if icon.startswith('\\u'):
         icon = icon.encode('utf-8').decode('unicode-escape')
     logging.debug(f'Getting icon for program {program_name} (base_name: {base_name}) -> {icon!r}')
     return icon
+
 
 HOME_DIR = os.path.expanduser('~')
 USR_BIN_REMOVER = (r'^(/usr)?/bin/(.+)', r'\g<2>')
@@ -81,9 +83,10 @@ def get_option(server: Server, option: str, default: Any) -> Any:
     if isinstance(default, dict):
         try:
             import json
+
             return json.loads(value)
         except json.JSONDecodeError:
-            logging.warning(f"Failed to parse JSON for option {option}, using default")
+            logging.warning(f'Failed to parse JSON for option {option}, using default')
             return default
     # Handle other types
     return eval(value)
