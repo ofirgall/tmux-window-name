@@ -70,7 +70,12 @@ def get_option(server: Server, option: str, default: Any) -> Any:
     if len(out) == 0:
         return default
 
-    return eval(out[0])
+    value = out[0]
+    # Handle string values
+    if isinstance(default, str):
+        return value
+    # Handle other types
+    return eval(value)
 
 
 def set_option(server: Server, option: str, val: str):
@@ -173,7 +178,7 @@ class Options:
     ignored_programs: List[str] = field(default_factory=lambda: [])
     max_name_len: int = 20
     use_tilde: bool = False
-    use_nerd_font_icons: bool = False
+    icon_style: str = 'name'  # Can be: 'name', 'icon', 'name+icon'
     substitute_sets: List[Tuple] = field(
         default_factory=lambda: [
             (r'.+ipython([32])', r'ipython\g<1>'),
@@ -273,10 +278,13 @@ def get_session_active_panes(session: Session) -> List[TmuxPane]:
 def rename_window(server: Server, window_id: str, window_name: str, max_name_len: int, options: Options):
     logging.debug(f'renaming window_id={window_id} to window_name={window_name}')
 
-    if options.use_nerd_font_icons:
+    if options.icon_style in ['icon', 'name+icon']:
         icon = get_program_icon(window_name)
         if icon:
-            window_name = f'{icon} {window_name}'
+            if options.icon_style == 'icon':
+                window_name = icon
+            elif options.icon_style == 'name+icon':
+                window_name = f'{icon} {window_name}'
             logging.debug(f'Added icon {icon} to window name. New name: {window_name}')
 
     window_name = window_name[:max_name_len]
@@ -392,10 +400,13 @@ def print_programs(server: Server, options: Options):
     for pane in panes_programs:
         if pane.program:
             program_name = substitute_name(pane.program, options.substitute_sets)
-            if options.use_nerd_font_icons:
+            if options.icon_style in ['icon', 'name+icon']:
                 icon = get_program_icon(program_name)
                 if icon:
-                    program_name = f'{icon} {program_name}'
+                    if options.icon_style == 'icon':
+                        program_name = icon
+                    elif options.icon_style == 'name+icon':
+                        program_name = f'{icon} {program_name}'
             print(f'{pane.program} -> {program_name}')
 
 
