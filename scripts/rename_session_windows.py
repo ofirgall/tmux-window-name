@@ -6,9 +6,10 @@ import tempfile
 import subprocess
 import os
 import re
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterator, List, Optional, Tuple
+from enum import Enum
+from dataclasses import dataclass, field
 from argparse import ArgumentParser
 from contextlib import contextmanager
 
@@ -20,9 +21,10 @@ from path_utils import get_exclusive_paths, Pane
 
 OPTIONS_PREFIX = '@tmux_window_name_'
 HOOK_INDEX = 8921
+HOME_DIR = os.path.expanduser('~')
+USR_BIN_REMOVER = (r'^(/usr)?/bin/(.+)', r'\g<2>')
 
-# Mapping of program names to their nerd font icons
-PROGRAM_ICONS = {
+DEFAULT_PROGRAM_ICONS = {
     'nvim': '',  # nf-dev-vim
     'vim': '',  # nf-dev-vim
     'vi': '',  # nf-dev-vim
@@ -48,48 +50,21 @@ PROGRAM_ICONS = {
 }
 
 
-def get_program_icon(program_name: str, options: 'Options') -> str:
-    """Get the nerd font icon for a program name."""
-    # Remove any path components and arguments
-    base_name = program_name.split()[0].split('/')[-1]
-    # If the name contains a colon, use the part before it
-    if ':' in base_name:
-        base_name = base_name.split(':')[0]
-
-    # First check custom icons, then fall back to built-in icons
-    icon = options.custom_icons.get(base_name) or PROGRAM_ICONS.get(base_name, '')
-
-    # Decode Unicode escape sequences if present
-    if icon.startswith('\\u'):
-        icon = icon.encode('utf-8').decode('unicode-escape')
-    logging.debug(f'Getting icon for program {program_name} (base_name: {base_name}) -> {icon!r}')
-    return icon
-
-
-HOME_DIR = os.path.expanduser('~')
-USR_BIN_REMOVER = (r'^(/usr)?/bin/(.+)', r'\g<2>')
-
-
 def get_option(server: Server, option: str, default: Any) -> Any:
     out = server.cmd('show-option', '-gv', f'{OPTIONS_PREFIX}{option}').stdout
     if len(out) == 0:
         return default
 
-    value = out[0]
-    # Handle string values
-    if isinstance(default, str):
-        return value
-    # Handle dict values (for custom_icons)
-    if isinstance(default, dict):
-        try:
-            import json
+    # If the option is icon_style and the output looks like a bare string (not quoted)
+    # wrap it in quotes to avoid NameError when evaluating
+    if option == 'icon_style' and out[0] and not (out[0].startswith("'") or out[0].startswith('"')):
+        return out[0]  # Return the raw string value
 
-            return json.loads(value)
-        except json.JSONDecodeError:
-            logging.warning(f'Failed to parse JSON for option {option}, using default')
-            return default
-    # Handle other types
-    return eval(value)
+    try:
+        return eval(out[0])
+    except NameError:
+        # If eval fails due to NameError, return the raw string
+        return out[0]
 
 
 def set_option(server: Server, option: str, val: str):
@@ -185,6 +160,12 @@ def tmux_guard(server: Server) -> Iterator[bool]:
             set_option(server, 'running', '0')
 
 
+class IconStyle(str, Enum):
+    NAME = 'name'
+    ICON = 'icon'
+    NAME_AND_ICON = 'name_and_icon'
+
+
 @dataclass
 class Options:
     shells: List[str] = field(default_factory=lambda: ['bash', 'fish', 'sh', 'zsh'])
@@ -192,7 +173,7 @@ class Options:
     ignored_programs: List[str] = field(default_factory=lambda: [])
     max_name_len: int = 20
     use_tilde: bool = False
-    icon_style: str = 'name'  # Can be: 'name', 'icon', 'name+icon'
+    icon_style: IconStyle = IconStyle.NAME
     custom_icons: dict = field(default_factory=lambda: {})  # User-defined program icons
     substitute_sets: List[Tuple] = field(
         default_factory=lambda: [
@@ -219,7 +200,48 @@ class Options:
             field.name: get_option(server, field.name, default_field_value(field)) for field in fields.values()
         }
 
+        # Convert icon_style from string to enum if it's a string
+        if 'icon_style' in fields_values and isinstance(fields_values['icon_style'], str):
+            try:
+                fields_values['icon_style'] = IconStyle(fields_values['icon_style'])
+            except ValueError:
+                # Use default if the value is invalid
+                fields_values['icon_style'] = IconStyle.NAME
+
         return Options(**fields_values)
+
+
+def get_program_icon(program_name: str, options: Options) -> str:
+    """Get the nerd font icon for a program name."""
+    # Remove any path components and arguments
+    base_name = program_name.split()[0].split('/')[-1]
+    # If the name contains a colon, use the part before it
+    if ':' in base_name:
+        base_name = base_name.split(':')[0]
+
+    # First check custom icons, then fall back to built-in icons
+    icon = options.custom_icons.get(base_name) or DEFAULT_PROGRAM_ICONS.get(base_name, '')
+
+    # Decode Unicode escape sequences if present
+    if icon.startswith('\\u'):
+        icon = icon.encode('utf-8').decode('unicode-escape')
+    logging.debug(f'Getting icon for program {program_name} (base_name: {base_name}) -> {icon!r}')
+    return icon
+
+
+def apply_icon_if_in_style(name: str, options: Options) -> str:
+    new_name = name
+    if options.icon_style in [IconStyle.ICON, IconStyle.NAME_AND_ICON]:
+        icon = get_program_icon(name, options)
+
+        if icon:
+            if options.icon_style == IconStyle.ICON:
+                new_name = f'{icon}'
+            elif options.icon_style == IconStyle.NAME_AND_ICON:
+                new_name = f'{icon} {name}'
+
+            logging.debug(f'Applied icon {icon} to name, {name}. New name: {new_name}')
+    return new_name
 
 
 def parse_shell_command(shell_cmd: List[bytes]) -> Optional[str]:
@@ -293,15 +315,7 @@ def get_session_active_panes(session: Session) -> List[TmuxPane]:
 def rename_window(server: Server, window_id: str, window_name: str, max_name_len: int, options: Options):
     logging.debug(f'renaming window_id={window_id} to window_name={window_name}')
 
-    if options.icon_style in ['icon', 'name+icon']:
-        icon = get_program_icon(window_name, options)
-        if icon:
-            if options.icon_style == 'icon':
-                window_name = icon
-            elif options.icon_style == 'name+icon':
-                window_name = f'{icon} {window_name}'
-            logging.debug(f'Added icon {icon} to window name. New name: {window_name}')
-
+    window_name = apply_icon_if_in_style(window_name, options)
     window_name = window_name[:max_name_len]
     logging.debug(f'shortened name window_name={window_name}')
 
@@ -415,13 +429,7 @@ def print_programs(server: Server, options: Options):
     for pane in panes_programs:
         if pane.program:
             program_name = substitute_name(pane.program, options.substitute_sets)
-            if options.icon_style in ['icon', 'name+icon']:
-                icon = get_program_icon(program_name, options)
-                if icon:
-                    if options.icon_style == 'icon':
-                        program_name = f'{icon} '
-                    elif options.icon_style == 'name+icon':
-                        program_name = f'{icon} {program_name}'
+            program_name = apply_icon_if_in_style(program_name, options)
             print(f'{pane.program} -> {program_name}')
 
 

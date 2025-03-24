@@ -265,14 +265,14 @@ Configure how icons are displayed in window names. \
 Available styles:
 - `name`: Show only program name (default)
 - `icon`: Show only icon
-- `name+icon`: Show both icon and program name
+- `name_and_icon`: Show both icon and program name
 
 ```tmux.conf
 # Show only icons
 set -g @tmux_window_name_icon_style "'icon'"
 
 # Show icons with program names
-set -g @tmux_window_name_icon_style "'name+icon'"
+set -g @tmux_window_name_icon_style "'name_and_icon'"
 
 # Default Value:
 set -g @tmux_window_name_icon_style "'name'"
@@ -281,7 +281,7 @@ set -g @tmux_window_name_icon_style "'name'"
 ### `@tmux_window_name_custom_icons`
 
 Customize icons for specific programs. \
-The value should be a JSON object mapping program names to their icons.
+The value should be a dictionary mapping program names to their icons.
 
 ```tmux.conf
 # Custom icons example
