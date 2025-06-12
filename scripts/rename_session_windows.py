@@ -6,6 +6,7 @@ import tempfile
 import subprocess
 import os
 import re
+import platform
 from pathlib import Path
 from typing import Any, Iterator, List, Optional, Tuple
 from enum import Enum
@@ -458,7 +459,8 @@ def main():
     )
 
     log_level = logging._nameToLevel.get(options.log_level, logging.WARNING)
-    log_file = os.path.join(tempfile.gettempdir(), 'tmux-window-name')
+    tempdir = "/tmp" if platform.system() == 'Darwin' else tempfile.gettempdir()
+    log_file = os.path.join(tempdir, 'tmux-window-name.log')
     logging.basicConfig(
         level=log_level, filename=log_file, format='%(levelname)s - %(filename)s:%(lineno)d %(funcName)s() %(message)s'
     )
