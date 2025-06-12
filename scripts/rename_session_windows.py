@@ -257,15 +257,13 @@ def parse_shell_command(shell_cmd: List[bytes]) -> Optional[str]:
     return ' '.join(shell_cmd_str[1:])
 
 
-def get_current_program(running_programs: List[bytes], pane: TmuxPane, options: Options) -> Optional[str]:
+def get_current_program(running_programs: List[List[bytes]], pane: TmuxPane, options: Options) -> Optional[str]:
     if pane.pane_pid is None:
         raise ValueError(f'Pane id is none, pane: {pane}')
 
     logging.debug(f"searching for active pane's child with pane_pid={pane.pane_pid}")
 
     for program in running_programs:
-        program = program.split()
-
         # if pid matches parse program
         if int(program[0]) == int(pane.pane_pid):
             program = program[1:]
@@ -335,11 +333,25 @@ def rename_window(server: Server, window_id: str, window_name: str, max_name_len
 def get_panes_programs(session: Session, options: Options) -> List[Pane]:
     session_active_panes = get_session_active_panes(session)
     try:
-        running_programs = subprocess.check_output(['ps', '-a', '-oppid,command']).splitlines()[1:]
+        output = subprocess.check_output(['ps', '-a', '-opid,comm'])
+        pid_to_argv0 = dict(o.split(maxsplit=1) for o in output.splitlines()[1:])
+
+        running_programs = []
+        output = subprocess.check_output(['ps', '-a', '-opid,ppid,command'])
+        for o in output.splitlines()[1:]:
+            pid, ppid, command = o.split(maxsplit=2)
+
+            argv0 = pid_to_argv0.get(pid)
+            if argv0:
+                argv = [argv0] + command.lstrip(argv0).split()
+            else:
+                argv = command.split()
+
+            running_programs.append([ppid] + argv)
         logging.debug(f'running_programs={running_programs}')
     # can occur if ps has empty output
     except subprocess.CalledProcessError:
-        logging.warning('nothing returned from `ps -a -oppid,command`')
+        logging.warning('nothing returned from ps')
         running_programs = []
 
     return [Pane(p, get_current_program(running_programs, p, options)) for p in session_active_panes]
