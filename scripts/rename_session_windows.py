@@ -186,6 +186,7 @@ class Options:
     )
     dir_substitute_sets: List[Tuple] = field(default_factory=lambda: [])
     show_program_args: bool = True
+    show_program_basename: bool = False
     log_level: str = 'WARNING'
 
     @staticmethod
@@ -288,6 +289,8 @@ def get_current_program(running_programs: List[bytes], pane: TmuxPane, options: 
                 logging.debug(f'its a shell, parsed shell program {shell_program}')
                 return shell_program
 
+            if options.show_program_basename:
+                program[0] = Path(program[0].decode()).name.encode()
             if not options.show_program_args:
                 return program[0].decode()
 

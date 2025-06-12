@@ -224,6 +224,14 @@ Show arguments that the program has been ran with.
 set -g @tmux_window_name_show_program_args "True"
 ```
 
+### `@tmux_window_name_show_program_basename`
+
+Show only the basename of the running program
+
+```tmux.conf
+set -g @tmux_window_name_show_program_basename "False"
+```
+
 ### `@tmux_window_name_substitute_sets`
 
 Replace program command lines with [re.sub](https://docs.python.org/3/library/re.html#re.sub). \
