@@ -12,7 +12,7 @@ from path_utils import get_exclusive_paths, Pane
 
 @dataclass
 class FakePane:
-    pane_current_path: str | None
+    pane_current_path: Optional[str]
 
 
 def _fake_pane(path: str, program: Optional[str]):
