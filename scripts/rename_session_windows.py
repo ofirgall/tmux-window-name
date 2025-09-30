@@ -388,7 +388,16 @@ def rename_windows(server: Server, options: Options):
             display_path = substitute_name(str(display_path), options.dir_substitute_sets)
             if p.program is not None:
                 p.program = substitute_name(p.program, options.substitute_sets)
-                display_path = f'{p.program}:{display_path}'
+
+                # Get icon for the program if available
+                icon = get_program_icon(p.program, options)
+
+                # If icon exists and icon_style includes icons, show icon + dir only
+                if icon and options.icon_style in [IconStyle.ICON, IconStyle.NAME_AND_ICON]:
+                    display_path = f'{icon}:{display_path}'
+                else:
+                    # No icon available or icon_style is NAME, show program name
+                    display_path = f'{p.program}:{display_path}'
 
             rename_window(server, str(p.info.window_id), str(display_path), options.max_name_len, options)
 
