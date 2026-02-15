@@ -265,11 +265,15 @@ Configure how icons are displayed in window names. \
 Available styles:
 - `name`: Show only program name (default)
 - `icon`: Show only icon
+- `dir_and_icon`: Show icon and active dir name
 - `name_and_icon`: Show both icon and program name
 
 ```tmux.conf
 # Show only icons
 set -g @tmux_window_name_icon_style "'icon'"
+
+# Show icons with program names with active dir
+set -g @tmux_window_name_icon_style "'dir_and_icon'"
 
 # Show icons with program names
 set -g @tmux_window_name_icon_style "'name_and_icon'"

@@ -164,6 +164,7 @@ class IconStyle(str, Enum):
     NAME = 'name'
     ICON = 'icon'
     NAME_AND_ICON = 'name_and_icon'
+    DIR_AND_ICON = 'dir_and_icon'
 
 
 @dataclass
@@ -228,20 +229,29 @@ def get_program_icon(program_name: str, options: Options) -> str:
     logging.debug(f'Getting icon for program {program_name} (base_name: {base_name}) -> {icon!r}')
     return icon
 
+@dataclass
+class StyleResult:
+    icon_set: bool = False
+    only_icon: bool = False
 
-def apply_icon_if_in_style(name: str, options: Options) -> str:
-    new_name = name
-    if options.icon_style in [IconStyle.ICON, IconStyle.NAME_AND_ICON]:
-        icon = get_program_icon(name, options)
+def apply_icon_if_in_style(program_name: str, options: Options) -> Tuple[str, StyleResult]:
+    if options.icon_style in [IconStyle.ICON, IconStyle.NAME_AND_ICON, IconStyle.DIR_AND_ICON]:
+        icon = get_program_icon(program_name, options)
 
         if icon:
+            only_icon = False
             if options.icon_style == IconStyle.ICON:
                 new_name = f'{icon}'
+                only_icon = True
             elif options.icon_style == IconStyle.NAME_AND_ICON:
-                new_name = f'{icon} {name}'
+                new_name = f'{icon} {program_name}'
+            elif options.icon_style == IconStyle.DIR_AND_ICON:
+                new_name = f'{icon}'
 
-            logging.debug(f'Applied icon {icon} to name, {name}. New name: {new_name}')
-    return new_name
+            logging.debug(f'Applied icon {icon} to name, {program_name}. New name: {new_name}')
+            return new_name, StyleResult(True, only_icon)
+
+    return program_name, StyleResult(False, False)
 
 
 def parse_shell_command(shell_cmd: List[bytes]) -> Optional[str]:
@@ -315,7 +325,6 @@ def get_session_active_panes(session: Session) -> List[TmuxPane]:
 def rename_window(server: Server, window_id: str, window_name: str, max_name_len: int, options: Options):
     logging.debug(f'renaming window_id={window_id} to window_name={window_name}')
 
-    window_name = apply_icon_if_in_style(window_name, options)
     window_name = window_name[:max_name_len]
     logging.debug(f'shortened name window_name={window_name}')
 
@@ -370,7 +379,7 @@ def rename_windows(server: Server, options: Options):
                 continue
 
             logging.debug(f'processing program without dir: {str(pane.program)}')
-            pane.program = substitute_name(str(pane.program), options.substitute_sets)
+            pane.program, _ = substitute_name(str(pane.program), options.substitute_sets, options, True)
             rename_window(server, str(pane.info.window_id), pane.program, options.max_name_len, options)
 
         exclusive_paths = get_exclusive_paths(panes_with_dir)
@@ -385,10 +394,10 @@ def rename_windows(server: Server, options: Options):
                 continue
 
             logging.debug(f'processing exclusive_path: display_path={display_path} p.program={p.program}')
-            display_path = substitute_name(str(display_path), options.dir_substitute_sets)
+            display_path, _ = substitute_name(str(display_path), options.dir_substitute_sets, options, False)
             if p.program is not None:
-                p.program = substitute_name(p.program, options.substitute_sets)
-                display_path = f'{p.program}:{display_path}'
+                p.program, style = substitute_name(p.program, options.substitute_sets, options, True)
+                display_path = f'{p.program}{" " if style.icon_set else ":"}{"" if style.only_icon else display_path}'
 
             rename_window(server, str(p.info.window_id), str(display_path), options.max_name_len, options)
 
@@ -411,14 +420,16 @@ def get_current_session(server: Server) -> Session:
     session_id = server.cmd('display-message', '-p', '#{session_id}').stdout[0]
     return Session(server, session_id=session_id)
 
-
-def substitute_name(name: str, substitute_sets: List[Tuple]) -> str:
+def substitute_name(name: str, substitute_sets: List[Tuple], options: Options, apply_icon: bool) -> Tuple[str, StyleResult]:
     logging.debug(f'substituting {name}')
     for pattern, replacement in substitute_sets:
         name = re.sub(pattern, replacement, name)
         logging.debug(f'after pattern={pattern} replacement={replacement}: {name}')
 
-    return name
+    if apply_icon:
+        return apply_icon_if_in_style(name, options)
+
+    return name, StyleResult()
 
 
 def print_programs(server: Server, options: Options):
@@ -428,8 +439,7 @@ def print_programs(server: Server, options: Options):
 
     for pane in panes_programs:
         if pane.program:
-            program_name = substitute_name(pane.program, options.substitute_sets)
-            program_name = apply_icon_if_in_style(program_name, options)
+            program_name, _ = substitute_name(pane.program, options.substitute_sets, options, True)
             print(f'{pane.program} -> {program_name}')
 
 
