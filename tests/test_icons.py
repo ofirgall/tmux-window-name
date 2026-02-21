@@ -2,8 +2,7 @@
 
 import sys
 from dataclasses import dataclass
-from typing import Optional
-from unittest.mock import Mock, patch, call
+from unittest.mock import Mock, call
 
 sys.path.append('scripts/')
 

@@ -6,6 +6,7 @@ import tempfile
 import subprocess
 import os
 import re
+import platform
 from pathlib import Path
 from typing import Any, Iterator, List, Optional, Tuple
 from enum import Enum
@@ -186,6 +187,7 @@ class Options:
     )
     dir_substitute_sets: List[Tuple] = field(default_factory=lambda: [])
     show_program_args: bool = True
+    show_program_basename: bool = False
     log_level: str = 'WARNING'
 
     @staticmethod
@@ -265,15 +267,13 @@ def parse_shell_command(shell_cmd: List[bytes]) -> Optional[str]:
     return ' '.join(shell_cmd_str[1:])
 
 
-def get_current_program(running_programs: List[bytes], pane: TmuxPane, options: Options) -> Optional[str]:
+def get_current_program(running_programs: List[List[bytes]], pane: TmuxPane, options: Options) -> Optional[str]:
     if pane.pane_pid is None:
         raise ValueError(f'Pane id is none, pane: {pane}')
 
     logging.debug(f"searching for active pane's child with pane_pid={pane.pane_pid}")
 
     for program in running_programs:
-        program = program.split()
-
         # if pid matches parse program
         if int(program[0]) == int(pane.pane_pid):
             program = program[1:]
@@ -297,6 +297,8 @@ def get_current_program(running_programs: List[bytes], pane: TmuxPane, options: 
                 logging.debug(f'its a shell, parsed shell program {shell_program}')
                 return shell_program
 
+            if options.show_program_basename:
+                program[0] = Path(program[0].decode()).name.encode()
             if not options.show_program_args:
                 return program[0].decode()
 
@@ -340,11 +342,25 @@ def rename_window(server: Server, window_id: str, window_name: str, max_name_len
 def get_panes_programs(session: Session, options: Options) -> List[Pane]:
     session_active_panes = get_session_active_panes(session)
     try:
-        running_programs = subprocess.check_output(['ps', '-a', '-oppid,command']).splitlines()[1:]
+        output = subprocess.check_output(['ps', '-a', '-opid,comm'])
+        pid_to_argv0 = dict(o.split(maxsplit=1) for o in output.splitlines()[1:])
+
+        running_programs = []
+        output = subprocess.check_output(['ps', '-a', '-opid,ppid,command'])
+        for o in output.splitlines()[1:]:
+            pid, ppid, command = o.split(maxsplit=2)
+
+            argv0 = pid_to_argv0.get(pid)
+            if argv0:
+                argv = [argv0] + command.lstrip(argv0).split()
+            else:
+                argv = command.split()
+
+            running_programs.append([ppid] + argv)
         logging.debug(f'running_programs={running_programs}')
     # can occur if ps has empty output
     except subprocess.CalledProcessError:
-        logging.warning('nothing returned from `ps -a -oppid,command`')
+        logging.warning('nothing returned from ps')
         running_programs = []
 
     return [Pane(p, get_current_program(running_programs, p, options)) for p in session_active_panes]
@@ -468,7 +484,8 @@ def main():
     )
 
     log_level = logging._nameToLevel.get(options.log_level, logging.WARNING)
-    log_file = os.path.join(tempfile.gettempdir(), 'tmux-window-name')
+    tempdir = "/tmp" if platform.system() == 'Darwin' else tempfile.gettempdir()
+    log_file = os.path.join(tempdir, 'tmux-window-name.log')
     logging.basicConfig(
         level=log_level, filename=log_file, format='%(levelname)s - %(filename)s:%(lineno)d %(funcName)s() %(message)s'
     )
