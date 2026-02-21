@@ -340,7 +340,9 @@ def rename_window(server: Server, window_id: str, window_name: str, max_name_len
 def get_panes_programs(session: Session, options: Options) -> List[Pane]:
     session_active_panes = get_session_active_panes(session)
     try:
-        running_programs = subprocess.check_output(['ps', '-a', '-oppid,command']).splitlines()[1:]
+        output_bytes = subprocess.check_output(['ps', '-a', '-oppid,command'])
+        all_lines_bytes = output_bytes.splitlines()[1:]
+        running_programs = [line for line in all_lines_bytes if b'<defunct>' not in line]
         logging.debug(f'running_programs={running_programs}')
     # can occur if ps has empty output
     except subprocess.CalledProcessError:
