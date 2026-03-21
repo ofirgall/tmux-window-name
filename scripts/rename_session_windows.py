@@ -309,7 +309,7 @@ def get_program_if_dir(program_line: str, dir_programs: List[str]) -> Optional[s
     program = program_line.split()
 
     for p in dir_programs:
-        if p == program[0]:
+        if p == program[0] or p == Path(program[0]).name:
             program[0] = p
             return ' '.join(program)
 
