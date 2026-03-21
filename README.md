@@ -87,6 +87,14 @@ vim.api.nvim_create_autocmd({ 'VimEnter', 'VimLeave' }, {
 })
 ```
 
+### Vim Script autocmd example 
+```vim
+" update the script path based on your setup
+if !empty($TMUX) && has('job')
+  autocmd VimEnter,VimLeave * call job_start(expand('$HOME/.config/tmux/plugins/tmux-window-name/scripts/rename_session_windows.py'))
+endif
+```
+
 ### Automatic rename after changing dir
 By default `tmux-window-name` hooks `after-select-window` which trigged when switching windows, you can add hook in your `.shellrc` to execute `tmux-window-name`
 ##### .zshrc
