@@ -298,6 +298,30 @@ set -g @tmux_window_name_custom_icons '{}'
 _**Note**_: Icons can be any Unicode characters, including emoji or Nerd Font icons. \
 If using Nerd Font icons, make sure your terminal supports them.
 
+### `@tmux_window_name_ignore_program_diffs`
+
+Controls whether to disambiguate paths when windows have different programs. \
+When enabled, windows with the same directory basename are always disambiguated, providing stable names regardless of program state.
+
+```tmux.conf
+# Always disambiguate paths, even when programs differ
+set -g @tmux_window_name_ignore_program_diffs "True"
+
+# Default Value:
+set -g @tmux_window_name_ignore_program_diffs "False"
+```
+
+**Use case:** \
+Without this option, window names can change based on program state. For example, a shell in `~/projects/app` and vim in `~/work/app` would both show `"app"` while vim runs, then change to `"projects/app"` and `"work/app"` after vim exits. Enabling this option ensures consistent disambiguation.
+
+**Example with `True`:**
+- Shell in `~/projects/app` → `projects/app`
+- Vim in `~/work/app` → `vim:work/app`
+
+**Example with `False` (default):**
+- Shell in `~/projects/app` → `app` (while vim is in other window)
+- Vim in `~/work/app` → `vim:app`
+
 ---
 
 ## Debug Configuration Options

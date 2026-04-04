@@ -172,6 +172,7 @@ class Options:
     shells: List[str] = field(default_factory=lambda: ['bash', 'fish', 'sh', 'zsh'])
     dir_programs: List[str] = field(default_factory=lambda: ['nvim', 'vim', 'vi', 'git'])
     ignored_programs: List[str] = field(default_factory=lambda: [])
+    ignore_program_diffs: bool = False
     max_name_len: int = 20
     use_tilde: bool = False
     icon_style: IconStyle = IconStyle.NAME
@@ -382,7 +383,7 @@ def rename_windows(server: Server, options: Options):
             pane.program, _ = substitute_name(str(pane.program), options.substitute_sets, options, True)
             rename_window(server, str(pane.info.window_id), pane.program, options.max_name_len, options)
 
-        exclusive_paths = get_exclusive_paths(panes_with_dir)
+        exclusive_paths = get_exclusive_paths(panes_with_dir, options.ignore_program_diffs)
         logging.debug(
             f'get_exclusive_paths result, input: panes_with_dir={panes_with_dir}, output: exclusive_paths={exclusive_paths}'
         )
