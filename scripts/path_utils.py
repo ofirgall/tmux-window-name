@@ -51,7 +51,7 @@ def get_uncommon_path(a: Path, b: Path) -> Tuple[Path, Path]:
     return Path(*a.parts[x:]), Path(*b.parts[x:])
 
 
-def get_exclusive_paths(panes: List[Pane]) -> List[Tuple[Pane, Path]]:
+def get_exclusive_paths(panes: List[Pane], ignore_program_diffs: bool) -> List[Tuple[Pane, Path]]:
     """Get exclusive path for each pane (better explaining in the README)
 
     Args:
@@ -72,7 +72,8 @@ def get_exclusive_paths(panes: List[Pane]) -> List[Tuple[Pane, Path]]:
 
             # If different programs dont change display path
             if panes[x].program != panes[y].program:
-                continue
+                if not ignore_program_diffs:
+                    continue
 
             # If full path equals no need to find a display path
             if exc_paths[x].full == exc_paths[y].full:
