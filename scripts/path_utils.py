@@ -71,7 +71,7 @@ def get_exclusive_paths(panes: List[Pane]) -> List[Tuple[Pane, Path]]:
                 continue
 
             # If different programs dont change display path
-            if panes[x].program != panes[y].program:
+            if panes[x].program != panes[y].program and None not in [panes[x].program, panes[y].program]:
                 continue
 
             # If full path equals no need to find a display path
