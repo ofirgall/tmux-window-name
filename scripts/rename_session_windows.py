@@ -122,26 +122,76 @@ def post_restore(server: Server):
 
 def enable_user_rename_hook(server: Server):
     """
-    The hook:
-        if window has name:
-            set @tmux_window_name_enabled to 1
-        else:
-            set @tmux_window_name_enabled to 0
-
-    @tmux_window_name_enabled (window option):
-        Indicator if we should rename the window or not
+    Hook that handles user renames
     """
     current_file = Path(__file__).absolute()
     server.cmd(
         'set-hook',
         '-g',
         f'after-rename-window[{HOOK_INDEX}]',
-        f'if-shell "[ #{{n:window_name}} -gt 0 ]" "set -w @tmux_window_name_enabled 0" "set -w @tmux_window_name_enabled 1; run-shell "{current_file}"',
+        f'run-shell "{current_file} --rename_current_window"',
     )
 
 
 def disable_user_rename_hook(server: Server):
     server.cmd('set-hook', '-ug', f'after-rename-window[{HOOK_INDEX}]')
+
+
+def apply_prefix(prefix: str, dynamic_name: str) -> str:
+    """
+    Apply prefix template to dynamic name.
+
+    Examples: "work|" + "vim" -> "work|vim", "static" + "vim" -> "static", "" + "vim" -> "vim"
+    """
+    if prefix.endswith("|"):
+        return prefix.rstrip("|") + "|" + dynamic_name
+    elif prefix:
+        return prefix
+    else:
+        return dynamic_name
+
+
+def extract_prefix(window_name: str) -> str:
+    """
+    Extract prefix template from window name.
+
+    Examples: "foo|vim" -> "foo|", "foo" -> "foo", "" -> ""
+    """
+    if "|" in window_name:
+        return window_name[:window_name.index("|") + 1]
+    return window_name
+
+
+def should_enable_dynamic(prefix: str) -> bool:
+    """
+    Determine if dynamic naming should be enabled for given prefix.
+
+    Returns True if prefix is dynamic (ends with |) or empty.
+    Returns False if prefix is static (no |).
+    """
+    return prefix.endswith("|") or not prefix
+
+
+def set_current_window_prefix(server: Server):
+    """
+    Extract and store prefix from current window name.
+
+    Called from hook after user renames window.
+    """
+    window_id_result = server.cmd('display-message', '-p', '#{window_id}').stdout
+    window_name_result = server.cmd('display-message', '-p', '#{window_name}').stdout
+
+    if not window_id_result:
+        return
+
+    window_id = window_id_result[0]
+    window_name = window_name_result[0] if window_name_result else ""
+
+    prefix = extract_prefix(window_name)
+    set_window_tmux_option(server, window_id, f'{OPTIONS_PREFIX}prefix', prefix)
+
+    enabled = should_enable_dynamic(prefix)
+    set_window_tmux_option(server, window_id, f'{OPTIONS_PREFIX}enabled', '1' if enabled else '0')
 
 
 @contextmanager
@@ -325,6 +375,10 @@ def get_session_active_panes(session: Session) -> List[TmuxPane]:
 def rename_window(server: Server, window_id: str, window_name: str, max_name_len: int, options: Options):
     logging.debug(f'renaming window_id={window_id} to window_name={window_name}')
 
+    prefix = get_window_tmux_option(server, window_id, f'{OPTIONS_PREFIX}prefix', "", do_eval=False)
+    window_name = apply_prefix(prefix, window_name)
+    logging.debug(f'prefixed name window_name={window_name}')
+
     window_name = window_name[:max_name_len]
     logging.debug(f'shortened name window_name={window_name}')
 
@@ -450,6 +504,7 @@ def main():
     parser.add_argument('--print_programs', action='store_true', help='Prints full name of the programs in the session')
     parser.add_argument('--enable_rename_hook', action='store_true', help='Enables rename hook, for internal use')
     parser.add_argument('--disable_rename_hook', action='store_true', help='Enables rename hook, for internal use')
+    parser.add_argument('--rename_current_window', action='store_true', help='Called from rename hook, extract prefix from current window')
     parser.add_argument(
         '--post_restore',
         action='store_true',
@@ -483,6 +538,9 @@ def main():
         disable_user_rename_hook(server)
     elif args.post_restore:
         post_restore(server)
+    elif args.rename_current_window:
+        set_current_window_prefix(server)
+        rename_windows(server, options)
     else:
         rename_windows(server, options)
 

@@ -71,6 +71,21 @@ You can `tmux rename-window` manually to set your own window names, to re-enable
 
 Make sure your configuration/other plugins doesn't turn on `automatic-rename` and doesn't rename your windows.
 
+### Static Window Prefix Names
+
+To add a custom prefix to the window name, simply add a name containing a trailing `|`. The initial
+part of the text until `|` is considered static and will be preserved and prefixed along with the
+dynamically determined window name
+
+```bash
+tmux rename-window "work|" # results in: "work|vim", "work|vim:~", "work|~", etc.
+                           # (prefix "work")
+tmux rename-window ""      # returns in: "vim", "vim:~", "~", etc.
+                           # (back to the default)
+tmux rename-window "foo"   # results in: "foo"
+                           # (always static)
+```
+
 ### Automatic rename after launching neovim
 By default `tmux-window-name` hooks `after-select-window` which trigged when switching windows.
 
