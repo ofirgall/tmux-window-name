@@ -230,10 +230,12 @@ def get_program_icon(program_name: str, options: Options) -> str:
     logging.debug(f'Getting icon for program {program_name} (base_name: {base_name}) -> {icon!r}')
     return icon
 
+
 @dataclass
 class StyleResult:
     icon_set: bool = False
     only_icon: bool = False
+
 
 def apply_icon_if_in_style(program_name: str, options: Options) -> Tuple[str, StyleResult]:
     if options.icon_style in [IconStyle.ICON, IconStyle.NAME_AND_ICON, IconStyle.DIR_AND_ICON]:
@@ -313,6 +315,9 @@ def get_program_if_dir(program_line: str, dir_programs: List[str]) -> Optional[s
         if p == program[0] or p == Path(program[0]).name:
             program[0] = p
             return ' '.join(program)
+        for word in program[1:]:
+            if word == p or word.endswith('/' + p):
+                return p
 
     return None
 
@@ -421,7 +426,10 @@ def get_current_session(server: Server) -> Session:
     session_id = server.cmd('display-message', '-p', '#{session_id}').stdout[0]
     return Session(server, session_id=session_id)
 
-def substitute_name(name: str, substitute_sets: List[Tuple], options: Options, apply_icon: bool) -> Tuple[str, StyleResult]:
+
+def substitute_name(
+    name: str, substitute_sets: List[Tuple], options: Options, apply_icon: bool
+) -> Tuple[str, StyleResult]:
     logging.debug(f'substituting {name}')
     for pattern, replacement in substitute_sets:
         name = re.sub(pattern, replacement, name)
