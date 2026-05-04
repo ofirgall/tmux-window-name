@@ -130,6 +130,19 @@ To make the shortest path as possible the plugin finds the shortest not common p
 
 ## Installation
 
+### Recommended: install [uv](https://docs.astral.sh/uv/)
+
+If `uv` is on your `PATH`, the plugin auto-detects it and runs the script via `uv run --script`. `libtmux` is resolved from inline script metadata; the steps below for `pip install libtmux` and `dataclasses` are **not needed** in this case.
+
+Install uv:
+```sh
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+If `uv` is not present, the plugin falls back to `python3` and requires `libtmux` to be installed manually — see the next section.
+
+---
+
 ### Install libtmux (must)
 _**Note**_: Make sure you are using the `user` python and not `sudo` python or `virutalenv` python!
 
