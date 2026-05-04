@@ -87,11 +87,32 @@ vim.api.nvim_create_autocmd({ 'VimEnter', 'VimLeave' }, {
 })
 ```
 
+Or via `uv run --script` (resolves `libtmux` from PEP 723 metadata, no system install needed):
+```lua
+local loop = vim.uv
+
+vim.api.nvim_create_autocmd({ 'VimEnter', 'VimLeave' }, {
+	callback = function()
+		if vim.env.TMUX_PLUGIN_MANAGER_PATH then
+			local script = vim.env.TMUX_PLUGIN_MANAGER_PATH .. '/tmux-window-name/scripts/rename_session_windows.py'
+			loop.spawn('uv', { args = { 'run', '--script', script } })
+		end
+	end,
+})
+```
+
 ### Vim Script autocmd example 
 ```vim
 " update the script path based on your setup
 if !empty($TMUX) && has('job')
   autocmd VimEnter,VimLeave * call job_start(expand('$HOME/.config/tmux/plugins/tmux-window-name/scripts/rename_session_windows.py'))
+endif
+```
+
+Or via `uv run --script`:
+```vim
+if !empty($TMUX) && has('job')
+  autocmd VimEnter,VimLeave * call job_start('uv run --script ' . expand('$HOME/.config/tmux/plugins/tmux-window-name/scripts/rename_session_windows.py'))
 endif
 ```
 
@@ -101,6 +122,15 @@ By default `tmux-window-name` hooks `after-select-window` which trigged when swi
 ```bash
 tmux-window-name() {
 	($TMUX_PLUGIN_MANAGER_PATH/tmux-window-name/scripts/rename_session_windows.py &)
+}
+
+add-zsh-hook chpwd tmux-window-name
+```
+
+Or via `uv run --script`:
+```bash
+tmux-window-name() {
+	(uv run --script $TMUX_PLUGIN_MANAGER_PATH/tmux-window-name/scripts/rename_session_windows.py &)
 }
 
 add-zsh-hook chpwd tmux-window-name
