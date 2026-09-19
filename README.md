@@ -197,7 +197,7 @@ Programs that will show the dir name too.
 E.g: `git diff` running in `long_dir/my_repo` will show `git diff:my_repo`
 
 ```tmux.conf
-set -g @tmux_window_dir_programs "['nvim', 'vim', 'vi', 'git']"
+set -g @tmux_window_name_dir_programs "['nvim', 'vim', 'vi', 'git']"
 ```
 
 ### `@tmux_window_name_ignored_programs`
