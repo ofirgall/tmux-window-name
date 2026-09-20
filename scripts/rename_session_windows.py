@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.7"
+# dependencies = [
+#     "libtmux",
+# ]
+# ///
 
 import logging
 import logging.config
@@ -132,11 +138,13 @@ def enable_user_rename_hook(server: Server):
         Indicator if we should rename the window or not
     """
     current_file = Path(__file__).absolute()
+    launcher = os.environ.get('TMUX_WINDOW_NAME_LAUNCHER', '').strip()
+    invocation = f'{launcher} {current_file}' if launcher else str(current_file)
     server.cmd(
         'set-hook',
         '-g',
         f'after-rename-window[{HOOK_INDEX}]',
-        f'if-shell "[ #{{n:window_name}} -gt 0 ]" "set -w @tmux_window_name_enabled 0" "set -w @tmux_window_name_enabled 1; run-shell "{current_file}"',
+        f'if-shell "[ #{{n:window_name}} -gt 0 ]" "set -w @tmux_window_name_enabled 0" "set -w @tmux_window_name_enabled 1; run-shell \\"{invocation}\\""',
     )
 
 
