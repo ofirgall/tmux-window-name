@@ -108,6 +108,17 @@ def set_window_tmux_option(server: Server, window_id: Optional[str], option: str
     server.cmd(*arguments)
 
 
+def is_window_rename_enabled(server: Server, window_id: str) -> bool:
+    if get_window_option(server, window_id, 'enabled', 1):
+        return True
+
+    if get_window_tmux_option(server, window_id, 'automatic-rename', 'on') != 'on':
+        return False
+
+    set_window_tmux_option(server, window_id, f'{OPTIONS_PREFIX}enabled', '1')
+    return True
+
+
 def post_restore(server: Server):
     # Re enable tmux-window-name if `automatic-rename` is on
     for window in server.windows:
@@ -123,10 +134,10 @@ def post_restore(server: Server):
 def enable_user_rename_hook(server: Server):
     """
     The hook:
-        if window has name:
-            set @tmux_window_name_enabled to 1
-        else:
+        if window has a name and automatic-rename is off:
             set @tmux_window_name_enabled to 0
+        else:
+            set @tmux_window_name_enabled to 1 and rename the session windows
 
     @tmux_window_name_enabled (window option):
         Indicator if we should rename the window or not
@@ -136,7 +147,7 @@ def enable_user_rename_hook(server: Server):
         'set-hook',
         '-g',
         f'after-rename-window[{HOOK_INDEX}]',
-        f'if-shell "[ #{{n:window_name}} -gt 0 ]" "set -w @tmux_window_name_enabled 0" "set -w @tmux_window_name_enabled 1; run-shell "{current_file}"',
+        f'if-shell "[ #{{n:window_name}} -gt 0 ] && [ #{{automatic-rename}} -eq 0 ]" "set -w @tmux_window_name_enabled 0" "set -w @tmux_window_name_enabled 1; run-shell "{current_file}"',
     )
 
 
@@ -374,8 +385,7 @@ def rename_windows(server: Server, options: Options):
         logging.debug(f'panes_with_dir={panes_with_dir}')
 
         for pane in panes_with_programs:
-            enabled_in_window = get_window_option(server, pane.info.window_id, 'enabled', 1)
-            if not enabled_in_window:
+            if not is_window_rename_enabled(server, pane.info.window_id):
                 logging.debug(f'tmux winodw isnt enabled in {pane.info.window_id}')
                 continue
 
@@ -396,8 +406,7 @@ def rename_windows(server: Server, options: Options):
         )
 
         for p, display_path in exclusive_paths:
-            enabled_in_window = get_window_option(server, p.info.window_id, 'enabled', 1)
-            if not enabled_in_window:
+            if not is_window_rename_enabled(server, p.info.window_id):
                 logging.debug(f'tmux winodw isnt enabled in {p.info.window_id}')
                 continue
 
